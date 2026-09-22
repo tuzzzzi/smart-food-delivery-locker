@@ -1,5 +1,7 @@
 # Smart Food Delivery Locker
 
+[![Software checks](https://github.com/tuzzzzi/smart-food-delivery-locker/actions/workflows/checks.yml/badge.svg)](https://github.com/tuzzzzi/smart-food-delivery-locker/actions/workflows/checks.yml)
+
 A WeChat Mini Program and Python/Flask backend for coordinating food delivery, locker access and recipient pickup, with ESP32-CAM firmware and a YOLOv5 snapshot-inference adapter.
 
 **Python · Flask · SQLAlchemy · SQLite · JavaScript · WXML/WXSS · ESP32-CAM · YOLOv5**
