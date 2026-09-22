@@ -1,0 +1,222 @@
+<view class="page">
+  <view class="hero">
+    <view class="hero-main">
+      <text class="eyebrow">校园智能外卖柜</text>
+      <text class="title">配送现场工作台</text>
+      <text class="sub">你好，{{userName}}。先处理最紧急的一单，再继续投递。</text>
+    </view>
+    <view class="hero-actions">
+      <button class="quick-create" bindtap="goCreate">新建投递</button>
+      <button class="refresh-btn" bindtap="scanVerifyQr">扫一扫核验</button>
+      <button class="refresh-btn" bindtap="refreshAll" loading="{{loadingOverview}}" disabled="{{loadingOverview}}">刷新</button>
+    </view>
+  </view>
+
+  <view class="identity-card">
+    <view class="identity-main">
+      <view class="identity-title-group">
+        <text class="section-kicker">配送员身份</text>
+        <text class="identity-name">{{userName}}</text>
+      </view>
+      <text class="identity-action" bindtap="goCourierProfile">查看资料 ›</text>
+    </view>
+    <view class="identity-meta">
+      <view class="identity-item">
+        <text class="identity-label">认证状态</text>
+        <text class="identity-value">{{identityStatusText}}</text>
+      </view>
+      <view class="identity-item">
+        <text class="identity-label">服务区域</text>
+        <text class="identity-value">{{serviceAreaText}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="support-card" bindtap="goSmartService">
+    <view class="support-top">
+      <view class="support-icon">?</view>
+      <view class="support-main">
+        <text class="support-title">智能客服助手</text>
+        <text class="support-desc">投递异常、入柜失败、AI检测问题可快速求助</text>
+      </view>
+      <text class="support-action">立即咨询</text>
+    </view>
+    <view class="support-tags">
+      <text class="support-tag">开柜异常</text>
+      <text class="support-tag">AI检测</text>
+      <text class="support-tag">投递问题</text>
+    </view>
+  </view>
+
+  <view class="focus-card work-card" wx:if="{{focusTask}}">
+    <view class="card-head">
+      <view>
+        <text class="section-kicker">当前待处理任务</text>
+        <text class="focus-title">{{focusTask.displayTitle}}</text>
+      </view>
+      <text class="status-chip stage-{{focusTask.stageTone}}">{{focusTask.statusTitle}}</text>
+    </view>
+
+    <view class="focus-grid">
+      <view class="focus-item locker-focus">
+        <text class="info-label">柜号</text>
+        <text class="locker-no small-locker">{{focusTask.boxText}}</text>
+      </view>
+      <view class="focus-item">
+        <text class="info-label">收件人</text>
+        <text class="info-value">{{focusTask.receiverPhoneText}}</text>
+      </view>
+    </view>
+
+    <view class="problem-card" wx:if="{{focusTask.problemText}}">
+      <text class="problem-title">当前问题</text>
+      <text class="problem-text">{{focusTask.problemText}}</text>
+    </view>
+
+    <view class="next-card recommended">
+      <text class="next-title">当前建议</text>
+      <text class="next-desc">{{focusTask.recommendationText}}</text>
+    </view>
+
+    <view class="action-row">
+      <button class="btn primary half-btn" bindtap="openTaskFlow" data-taskid="{{focusTask.taskId}}">
+        {{focusTask.actionText}}
+      </button>
+      <button class="btn subtle half-btn" bindtap="openTaskError" data-taskid="{{focusTask.taskId}}" wx:if="{{focusTask.showErrorAction}}">
+        提交管理员处理
+      </button>
+    </view>
+  </view>
+
+  <view class="empty-focus" wx:if="{{!focusTask && !loadingOverview}}">
+    <text class="empty-title">当前没有待处理任务</text>
+    <text class="empty-desc">可以等待新任务，或立即创建临时投递任务。</text>
+    <button class="btn primary" bindtap="goCreate">新建投递任务</button>
+  </view>
+
+  <view class="summary-panel">
+    <view class="section-head compact-head">
+      <text class="section-title">今日概览</text>
+      <text class="status-chip status-{{statusClass}}">{{statusText}}</text>
+    </view>
+    <view class="summary-grid">
+      <view class="summary-card waiting">
+        <text class="summary-num">{{pendingCount}}</text>
+        <text class="summary-label">待投递</text>
+      </view>
+      <view class="summary-card busy">
+        <text class="summary-num">{{inProgressCount}}</text>
+        <text class="summary-label">处理中</text>
+      </view>
+      <view class="summary-card done">
+        <text class="summary-num">{{completedCount}}</text>
+        <text class="summary-label">已完成</text>
+      </view>
+    </view>
+    <text class="status-tip">{{statusTip}}</text>
+  </view>
+
+  <view class="section" wx:if="{{displayPendingTasks.length}}">
+    <view class="section-head">
+      <text class="section-title">待投递</text>
+      <text class="count-pill">{{displayPendingTasks.length}}</text>
+    </view>
+    <block wx:for="{{displayPendingTasks}}" wx:key="taskId">
+      <view class="task-card">
+        <view class="task-top">
+          <view class="task-main">
+            <text class="task-title">{{item.displayTitle}}</text>
+            <text class="task-sub">柜号 {{item.boxText}} · {{item.receiverPhoneText}}</text>
+          </view>
+          <text class="status-chip stage-{{item.stageTone}}">{{item.statusText}}</text>
+        </view>
+        <text class="task-desc">{{item.recommendationText}}</text>
+        <button class="btn primary small-btn" bindtap="openTaskFlow" data-taskid="{{item.taskId}}">
+          {{item.actionText}}
+        </button>
+      </view>
+    </block>
+  </view>
+
+  <view class="section" wx:if="{{displayInProgressTasks.length}}">
+    <view class="section-head">
+      <text class="section-title">处理中</text>
+      <text class="count-pill">{{displayInProgressTasks.length}}</text>
+    </view>
+    <block wx:for="{{displayInProgressTasks}}" wx:key="taskId">
+      <view class="task-card busy-card">
+        <view class="task-top">
+          <view class="task-main">
+            <text class="task-title">{{item.displayTitle}}</text>
+            <text class="task-sub">柜号 {{item.boxText}} · {{item.receiverPhoneText}}</text>
+          </view>
+          <text class="status-chip stage-{{item.stageTone}}">{{item.statusTitle}}</text>
+        </view>
+        <text class="task-desc">{{item.recommendationText}}</text>
+        <view class="action-row">
+          <button class="btn primary half-btn" bindtap="openTaskFlow" data-taskid="{{item.taskId}}">
+            {{item.actionText}}
+          </button>
+          <button class="btn subtle half-btn" bindtap="openTaskError" data-taskid="{{item.taskId}}" wx:if="{{item.showErrorAction}}">
+            提交管理员处理
+          </button>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view class="section" wx:if="{{displayCompletedTasks.length}}">
+    <view class="section-head">
+      <text class="section-title">已完成</text>
+      <button class="text-toggle" bindtap="toggleCompleted" wx:if="{{displayCompletedTasks.length > 1}}">
+        {{showAllCompleted ? '收起' : '查看全部'}}
+      </button>
+    </view>
+    <block wx:for="{{visibleCompletedTasks}}" wx:key="taskId">
+      <view class="task-card done-card compact-task">
+        <view class="task-top">
+          <view class="task-main">
+            <text class="task-title">{{item.displayTitle}}</text>
+            <text class="task-sub">柜号 {{item.boxText}} · {{item.receiverPhoneText}}</text>
+          </view>
+          <text class="status-chip stage-{{item.stageTone}}">{{item.statusText}}</text>
+        </view>
+      </view>
+    </block>
+    <text class="fold-tip" wx:if="{{hiddenCompletedCount > 0}}">还有 {{hiddenCompletedCount}} 条已完成任务未展开。</text>
+  </view>
+
+  <view class="section" wx:if="{{displayClosedTasks.length}}">
+    <view class="section-head">
+      <text class="section-title">异常/关闭</text>
+      <text class="count-pill warn-count">{{displayClosedTasks.length}}</text>
+    </view>
+    <block wx:for="{{displayClosedTasks}}" wx:key="taskId">
+      <view class="task-card closed-card">
+        <view class="task-top">
+          <view class="task-main">
+            <text class="task-title">{{item.displayTitle}}</text>
+            <text class="task-sub">柜号 {{item.boxText}} · {{item.receiverPhoneText}}</text>
+          </view>
+          <text class="status-chip stage-danger">{{item.statusText}}</text>
+        </view>
+        <text class="task-desc">{{item.recommendationText}}</text>
+        <button class="btn subtle small-btn" bindtap="openTaskError" data-taskid="{{item.taskId}}">
+          查看处理建议
+        </button>
+      </view>
+    </block>
+  </view>
+
+  <view class="more-actions">
+    <button class="more-btn" bindtap="switchIdentity">切换账号</button>
+  </view>
+
+  <view class="loading-card" wx:if="{{loadingOverview && !totalCount}}">
+    正在加载任务概览...
+  </view>
+
+  <view class="hint" wx:if="{{hintText}}">
+    <text>{{hintText}}</text>
+  </view>
+</view>

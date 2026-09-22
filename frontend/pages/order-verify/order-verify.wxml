@@ -1,0 +1,43 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">包裹核验</text>
+    <text class="title">包裹核验信息</text>
+    <text class="sub">请核对收件人、商家、柜号、状态和校验码。</text>
+  </view>
+
+  <view class="verify-card" wx:if="{{verifyInfo}}">
+    <view class="verify-row">
+      <text class="label">收件人</text>
+      <text class="value">{{verifyInfo.receiverName}}</text>
+    </view>
+    <view class="verify-row">
+      <text class="label">商家</text>
+      <text class="value">{{verifyInfo.merchantName}}</text>
+    </view>
+    <view class="verify-row">
+      <text class="label">柜号</text>
+      <text class="value strong">{{verifyInfo.boxNo}}</text>
+    </view>
+    <view class="verify-row">
+      <text class="label">当前状态</text>
+      <text class="value">{{verifyInfo.statusText}}</text>
+    </view>
+    <view class="verify-code">
+      <text class="label">校验码</text>
+      <text class="code">{{verifyInfo.verifyCode}}</text>
+    </view>
+  </view>
+
+  <view class="notice-card" wx:if="{{verifyInfo}}">
+    <text>该二维码仅用于核验包裹信息，正式取件仍需使用取件码并完成开柜流程。</text>
+  </view>
+
+  <view class="empty-card" wx:if="{{!verifyInfo && !loading}}">
+    <text class="empty-title">无法加载核验信息</text>
+    <text class="empty-desc">{{errorText || '二维码无效或订单不存在'}}</text>
+  </view>
+
+  <view class="hint" wx:if="{{loading}}">正在加载核验信息...</view>
+
+  <button class="back-btn" bindtap="goBackBySource">返回</button>
+</view>

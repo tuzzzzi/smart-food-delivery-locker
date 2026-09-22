@@ -1,0 +1,45 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">配送员</text>
+    <text class="title">新建投递任务</text>
+    <text class="sub">录入收件人手机号和商家/备注，系统会自动分配可用柜。</text>
+  </view>
+
+  <view class="form-card">
+    <view class="field">
+      <text class="label">收件人手机号</text>
+      <input
+        class="input"
+        type="number"
+        maxlength="11"
+        placeholder="请输入 11 位手机号"
+        bindinput="onReceiverInput"
+        value="{{receiverPhone}}"
+      />
+    </view>
+
+    <view class="field">
+      <text class="label">商家/备注</text>
+      <input
+        class="input"
+        placeholder="例如：蜜雪冰城、校门口取餐"
+        bindinput="onMerchantInput"
+        value="{{merchantName}}"
+      />
+    </view>
+
+    <view class="assign-card">
+      <text class="assign-title">柜号将自动分配</text>
+      <text class="assign-desc">创建成功后直接进入智能投递流程，页面会展示目标柜号。</text>
+    </view>
+
+    <button
+      class="btn primary"
+      bindtap="createTaskAndGo"
+      loading="{{creating}}"
+      disabled="{{creating}}"
+    >
+      创建并开始投递
+    </button>
+  </view>
+</view>

@@ -1,0 +1,203 @@
+.page {
+  min-height: 100vh;
+  padding: 20px 16px 28px;
+  box-sizing: border-box;
+  background: #f4f7fb;
+}
+
+.hero,
+.status-card,
+.context-card,
+.tips-card,
+.action-card {
+  margin-bottom: 14px;
+  padding: 18px;
+  border: 1px solid #e4ebf5;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  box-sizing: border-box;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  background: linear-gradient(135deg, #ffffff 0%, #fff7ed 100%);
+}
+
+.hero-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.eyebrow,
+.section-kicker {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ea580c;
+}
+
+.title {
+  display: block;
+  font-size: 23px;
+  line-height: 1.25;
+  font-weight: 900;
+  color: #111827;
+}
+
+.desc,
+.status-message,
+.hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #64748b;
+}
+
+.role-chip,
+.status-badge {
+  flex-shrink: 0;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 28px;
+  font-weight: 800;
+}
+
+.role-chip {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.status-card {
+  border-color: #fed7aa;
+}
+
+.status-title,
+.section-title {
+  display: block;
+  font-size: 17px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.badge-danger {
+  color: #b91c1c;
+  background: #fff1f2;
+}
+
+.badge-warning {
+  color: #c2410c;
+  background: #fff7ed;
+}
+
+.badge-success {
+  color: #059669;
+  background: #ecfdf5;
+}
+
+.badge-neutral,
+.badge-info {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.card-head,
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.info-row {
+  min-height: 42px;
+  margin-top: 10px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: #f8fafc;
+  font-size: 13px;
+  color: #334155;
+}
+
+.info-row text:last-child {
+  font-weight: 800;
+  color: #111827;
+}
+
+.note {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.tip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.tip-index {
+  width: 24px;
+  height: 24px;
+  border-radius: 9px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  line-height: 24px;
+  font-weight: 900;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.tip-text {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.75;
+  color: #475569;
+}
+
+.btn {
+  margin-top: 12px;
+  height: 50px;
+  line-height: 50px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.primary {
+  color: #ffffff;
+  background: #2563eb;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+}
+
+.secondary {
+  color: #ffffff;
+  background: #0f766e;
+}
+
+.danger {
+  color: #ffffff;
+  background: #f97316;
+}
+
+.ghost {
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #dbe7f5;
+}
+
+.hint {
+  text-align: center;
+}

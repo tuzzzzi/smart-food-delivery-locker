@@ -1,0 +1,97 @@
+.page {
+  min-height: 100vh;
+  padding: 20px 16px 28px;
+  box-sizing: border-box;
+  background: #f4f7fb;
+}
+
+.hero,
+.form-card {
+  margin-bottom: 14px;
+  padding: 18px;
+  border: 1px solid #e4ebf5;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  box-sizing: border-box;
+}
+
+.hero {
+  background: linear-gradient(135deg, #ffffff 0%, #eef6ff 100%);
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.title {
+  display: block;
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 900;
+  color: #111827;
+}
+
+.sub,
+.assign-desc {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #64748b;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.input {
+  height: 52px;
+  padding: 0 14px;
+  border-radius: 16px;
+  border: 1px solid #dbe7f5;
+  background: #f8fafc;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.assign-card {
+  margin: 4px 0 16px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+}
+
+.assign-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 900;
+  color: #1d4ed8;
+}
+
+.btn {
+  height: 50px;
+  line-height: 50px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.primary {
+  color: #ffffff;
+  background: #2563eb;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+}

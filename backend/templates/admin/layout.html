@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title or "智柜配送管理台" }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}" />
+</head>
+<body>
+  {% set current_endpoint = request.endpoint or '' %}
+  <div class="sidebar">
+    <div class="brand">智柜配送管理台</div>
+    <a class="nav {{ 'nav-active' if current_endpoint == 'admin.dashboard' else '' }}" href="{{ url_for('admin.dashboard') }}">仪表盘</a>
+    <a class="nav {{ 'nav-active' if current_endpoint == 'admin.users' and request.args.get('role') != 'courier' else '' }}" href="{{ url_for('admin.users') }}">用户</a>
+    <a class="nav {{ 'nav-active' if current_endpoint == 'admin.couriers_list' else '' }}" href="{{ url_for('admin.couriers_list') }}">配送员</a>
+    <a class="nav {{ 'nav-active' if current_endpoint in ['admin.platform_orders', 'admin.new_platform_order', 'admin.platform_order_detail'] else '' }}" href="{{ url_for('admin.platform_orders') }}">平台订单</a>
+    <a class="nav {{ 'nav-active' if current_endpoint == 'admin.exceptions' else '' }}" href="{{ url_for('admin.exceptions') }}">异常中心</a>
+    <a class="nav {{ 'nav-active' if current_endpoint == 'admin.boxes' else '' }}" href="{{ url_for('admin.boxes') }}">箱体状态</a>
+    <a class="nav {{ 'nav-active' if current_endpoint == 'admin.locker_debug' else '' }}" href="{{ url_for('admin.locker_debug') }}">设备诊断</a>
+    <a class="nav {{ 'nav-active' if current_endpoint == 'admin.tasks' else '' }}" href="{{ url_for('admin.tasks') }}">任务</a>
+    <a class="nav {{ 'nav-active' if current_endpoint == 'admin.packages' else '' }}" href="{{ url_for('admin.packages') }}">包裹</a>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="title">{{ title or "" }}</div>
+      {% if current_admin %}
+        <div class="hint">
+          管理员：{{ current_admin.username if current_admin.username else "已登录" }}
+          <a href="{{ url_for('admin.logout') }}">退出登录</a>
+        </div>
+      {% endif %}
+      <div class="hint">用于演示平台订单接入、派单、入柜、提醒、取件和异常人工干预的完整链路。</div>
+    </div>
+
+    <div class="content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</body>
+</html>

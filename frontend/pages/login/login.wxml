@@ -1,0 +1,51 @@
+<view class="page">
+  <view class="login-card">
+    <text class="eyebrow">校园智能外卖柜</text>
+    <text class="title">欢迎使用</text>
+    <text class="sub">登录后按账号身份进入取件首页、配送员工作台或审核状态页。</text>
+
+    <button
+      class="btn primary"
+      bindtap="doLogin"
+      loading="{{logging && !activeMockKey}}"
+      disabled="{{logging}}"
+    >
+      微信一键登录
+    </button>
+    <text class="login-tip">首次使用将进入资料完善和身份选择流程</text>
+
+    <view class="experience" wx:if="{{mockMode}}">
+      <view class="experience-head" bindtap="toggleDemo">
+        <text class="experience-title">测试账号入口</text>
+        <view class="experience-toggle">
+          <text>{{demoExpanded ? '收起' : '展开'}}</text>
+          <text class="arrow">{{demoExpanded ? '⌃' : '⌄'}}</text>
+        </view>
+      </view>
+      <view class="experience-list" wx:if="{{demoExpanded}}">
+        <block wx:for="{{mockGroups}}" wx:key="key">
+          <view class="experience-group">
+            <text class="group-title">{{item.title}}</text>
+            <block wx:for="{{item.items}}" wx:for-item="account" wx:key="key">
+              <button
+                class="btn experience-btn"
+                bindtap="doMockLogin"
+                data-key="{{account.key}}"
+                loading="{{logging && activeMockKey === account.key}}"
+                disabled="{{logging}}"
+              >
+                {{account.displayLabel || account.label || account.username}}
+              </button>
+            </block>
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <text class="loading-text" wx:if="{{loadingMockList}}">正在准备登录方式...</text>
+
+    <view class="hint" wx:if="{{hintText}}">
+      <text>{{hintText}}</text>
+    </view>
+  </view>
+</view>

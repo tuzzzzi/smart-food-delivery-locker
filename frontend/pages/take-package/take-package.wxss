@@ -1,0 +1,255 @@
+.page {
+  min-height: 100vh;
+  padding: 20px 16px 104px;
+  box-sizing: border-box;
+  background: #f4f7fb;
+}
+
+.hero,
+.search-card,
+.credential-card,
+.evidence-card,
+.empty-card {
+  margin-bottom: 14px;
+  padding: 18px;
+  border: 1px solid #e4ebf5;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  box-sizing: border-box;
+}
+
+.hero {
+  background: linear-gradient(135deg, #ffffff 0%, #eef6ff 100%);
+}
+
+.eyebrow,
+.section-kicker {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #2563eb;
+}
+
+.title {
+  display: block;
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.sub,
+.section-desc {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #64748b;
+}
+
+.section-title {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.code-input {
+  margin-top: 14px;
+  height: 52px;
+  padding: 0 16px;
+  border: 1px solid #dbe7f5;
+  border-radius: 16px;
+  background: #f8fafc;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  box-sizing: border-box;
+}
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.merchant {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.status-chip {
+  flex-shrink: 0;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 28px;
+  font-weight: 800;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.status-pending,
+.ai-waiting {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.status-picked,
+.ai-pass {
+  color: #059669;
+  background: #ecfdf5;
+}
+
+.ai-fail {
+  color: #c2410c;
+  background: #fff7ed;
+}
+
+.locker-block {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 20px;
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.locker-label {
+  display: block;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.locker-no {
+  display: block;
+  margin-top: 4px;
+  font-size: 42px;
+  line-height: 1.1;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.info-item {
+  min-height: 66px;
+  padding: 12px;
+  border: 1px solid #edf2f7;
+  border-radius: 16px;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
+
+.info-label,
+.verify-label {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.info-value,
+.verify-value {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.proof-image {
+  width: 100%;
+  height: 220px;
+  margin-top: 16px;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.image-placeholder {
+  margin-top: 16px;
+  padding: 28px 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 18px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.placeholder-title {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.placeholder-text {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #64748b;
+}
+
+.verify-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #edf2f7;
+}
+
+.verify-label,
+.verify-value {
+  margin: 0;
+}
+
+.hint {
+  margin: 10px 4px 0;
+  font-size: 12px;
+  line-height: 1.7;
+  text-align: center;
+  color: #64748b;
+}
+
+.bottom-actions {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(244, 247, 251, 0.94);
+  backdrop-filter: blur(14px);
+  box-sizing: border-box;
+}
+
+.btn {
+  height: 50px;
+  line-height: 50px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 800;
+  margin-top: 8px;
+}
+
+.primary {
+  color: #ffffff;
+  background: #2563eb;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+}
+
+.ghost {
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #dbe7f5;
+}

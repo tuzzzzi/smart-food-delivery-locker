@@ -1,0 +1,98 @@
+{% extends "admin/layout.html" %}
+{% set title = "配送员列表" %}
+
+{% block content %}
+
+<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+  <strong>筛选：</strong>
+
+  <a class="btn btn-sm {{ 'btn-primary' if apply_status == 'all' else 'btn-outline-primary' }}"
+     href="{{ url_for('admin.couriers_list', apply_status='all') }}">全部</a>
+
+  <a class="btn btn-sm {{ 'btn-primary' if apply_status == 'pending' else 'btn-outline-primary' }}"
+     href="{{ url_for('admin.couriers_list', apply_status='pending') }}">待审核</a>
+
+  <a class="btn btn-sm {{ 'btn-primary' if apply_status == 'approved' else 'btn-outline-primary' }}"
+     href="{{ url_for('admin.couriers_list', apply_status='approved') }}">已通过</a>
+
+  <a class="btn btn-sm {{ 'btn-primary' if apply_status == 'rejected' else 'btn-outline-primary' }}"
+     href="{{ url_for('admin.couriers_list', apply_status='rejected') }}">已拒绝</a>
+</div>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th style="min-width: 220px;">配送员姓名</th>
+      <th>昵称</th>
+      <th>配送员ID</th>
+      <th>手机号</th>
+      <th>审核状态</th>
+      <th>工作状态</th>
+      <th>审核备注</th>
+      <th>创建时间</th>
+      <th style="width: 320px;">操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for courier in couriers %}
+    {% set courier_name = courier.courier_name or courier.nickname or courier.openid or "-" %}
+    {% set nickname = courier.nickname or courier.courier_name or courier.openid or "-" %}
+    <tr>
+      <td style="font-size:12px;line-height:1.7;">
+        <div style="font-size:14px;color:#222;font-weight:600;">{{ courier_name }}</div>
+        <div style="color:#666;">OpenID：{{ courier.openid or "-" }}</div>
+      </td>
+
+      <td>{{ nickname }}</td>
+
+      <td>{{ courier.courier_id }}</td>
+
+      <td>{{ courier.phone_number or "-" }}</td>
+
+      <td><span class="badge">{{ courier.apply_status or "-" }}</span></td>
+
+      <td><span class="badge">{{ courier.work_status or courier.status or "-" }}</span></td>
+
+      <td style="font-size:12px;color:#666;">
+        {% if courier.review_note %}
+          {{ courier.review_note }}
+        {% else %}
+          <span style="color:#888;">-</span>
+        {% endif %}
+      </td>
+
+      <td>{{ courier.created_at|dt_local }}</td>
+
+      <td>
+        {% if courier.apply_status == "pending" %}
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <form method="post"
+                  action="{{ url_for('admin.courier_approve', courier_id=courier.courier_id, apply_status=apply_status) }}"
+                  onsubmit='return confirm({{ ("确认通过 " ~ courier_name ~ " 的配送员申请？")|tojson }});'
+                  style="display:inline;">
+              <button type="submit" class="btn btn-sm btn-success">通过</button>
+            </form>
+
+            <form method="post"
+                  action="{{ url_for('admin.courier_reject', courier_id=courier.courier_id, apply_status=apply_status) }}"
+                  style="display:flex;gap:6px;align-items:center;">
+              <input name="note"
+                     placeholder="拒绝原因(可选)"
+                     style="width:160px;font-size:12px;padding:4px 6px;" />
+              <button type="submit" class="btn btn-sm btn-danger">拒绝</button>
+            </form>
+          </div>
+        {% else %}
+          <span style="color:#888;">-</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if couriers|length == 0 %}
+  <div style="color:#888;margin-top:10px;">暂无数据</div>
+{% endif %}
+
+{% endblock %}

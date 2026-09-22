@@ -1,0 +1,131 @@
+<view class="container">
+  <view class="hero">
+    <view class="hero-main">
+      <text class="eyebrow">校园智能外卖柜</text>
+      <text class="title">我的取件中心</text>
+      <text class="sub">你好，{{userName}}。这里优先展示待取包裹和取件入口。</text>
+    </view>
+    <view class="hero-actions">
+      <button class="quick-verify" bindtap="scanVerifyQr">扫一扫核验</button>
+      <button class="quick-verify remind-mini {{unreadCount>0 ? 'is-active' : ''}}" bindtap="goRemindList">
+        提醒
+        <text class="dot" wx:if="{{unreadCount>0}}">{{unreadCount > 99 ? '99+' : unreadCount}}</text>
+      </button>
+      <button class="quick-verify" bindtap="goProfile">资料</button>
+    </view>
+  </view>
+
+  <view class="pickup-card" wx:if="{{pendingCount>0 && focusPending}}">
+    <view class="card-top">
+      <view>
+        <text class="section-kicker">当前待取</text>
+        <text class="pickup-title">{{focusPending.merchantName || '待取外卖'}}</text>
+      </view>
+      <text class="status-chip">待取件</text>
+    </view>
+
+    <view class="locker-hero">
+      <text class="locker-label">取件柜号</text>
+      <text class="locker-no">{{focusPending.boxNo || '-'}}</text>
+    </view>
+
+    <view class="info-grid {{focusPending.pickupCodeText ? '' : 'single-info-grid'}}">
+      <view class="info-item">
+        <text class="info-label">入柜时间</text>
+        <text class="info-value">{{focusPending.arrivedAtText || '刚刚入柜'}}</text>
+      </view>
+      <view class="info-item" wx:if="{{focusPending.pickupCodeText}}">
+        <text class="info-label">取件码</text>
+        <text class="info-value">{{focusPending.pickupCodeText}}</text>
+      </view>
+    </view>
+
+    <view class="action-row">
+      <button class="btn primary half-btn" bindtap="goFirstPending">立即取件</button>
+      <button class="btn ghost half-btn" bindtap="goFirstPendingDetail">查看入柜照片</button>
+    </view>
+  </view>
+
+  <view class="pickup-card empty-state" wx:else>
+    <text class="section-kicker">当前状态</text>
+    <text class="pickup-title">暂无待取包裹</text>
+    <text class="empty-desc">当前暂无待取外卖。如果你在柜前，也可以通过取件码快速查找包裹。</text>
+    <view class="action-row">
+      <button class="btn primary half-btn" bindtap="openPickupByCode">输入取件码</button>
+      <button class="btn ghost half-btn" bindtap="goRemindList">查看提醒</button>
+    </view>
+  </view>
+
+  <view class="entry-grid">
+    <view class="entry-card" bindtap="goRemindList">
+      <text class="entry-title">提醒中心</text>
+      <text class="entry-value">{{unreadCount}}</text>
+      <text class="entry-desc">{{unreadCount>0 ? '有新的取件提醒' : '暂无未读提醒'}}</text>
+    </view>
+    <view class="entry-card query-entry" bindtap="openPickupByCode">
+      <text class="entry-title">取件码查件</text>
+      <text class="entry-value query-value">6 位取件码</text>
+      <view class="query-bottom">
+        <text class="entry-desc query-desc">快速查找包裹</text>
+        <text class="query-action">去查询 ›</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="service-entry" bindtap="goSmartService">
+    <view class="service-top">
+      <view class="service-icon">?</view>
+      <view class="service-main">
+        <text class="service-title">智能客服助手</text>
+        <text class="service-desc">取件异常、柜门打不开、状态问题可快速求助</text>
+      </view>
+      <text class="service-action">立即咨询</text>
+    </view>
+    <view class="service-tags">
+      <text class="service-tag">取件异常</text>
+      <text class="service-tag">柜门问题</text>
+      <text class="service-tag">状态未更新</text>
+    </view>
+  </view>
+
+  <view class="section-card" wx:if="{{pendingList.length > 1}}">
+    <view class="section-head">
+      <text class="section-title">其他待取</text>
+      <text class="count-pill">{{otherPendingCount}}</text>
+    </view>
+    <block wx:for="{{pendingList}}" wx:for-index="index" wx:key="packageId">
+      <view class="list-item" wx:if="{{index>0}}">
+        <view class="item-main">
+          <text class="item-title">{{item.merchantName || '待取外卖'}}</text>
+          <text class="item-sub">柜号 {{item.boxNo || '-'}} · {{item.arrivedAtText || '待取件'}}</text>
+        </view>
+        <button class="item-btn" bindtap="goGuide" data-pid="{{item.packageId}}">取件</button>
+      </view>
+    </block>
+  </view>
+
+  <view class="section-card muted-section">
+    <view class="section-head">
+      <text class="section-title">最近记录</text>
+      <text class="count-pill muted">{{historyCount}}</text>
+    </view>
+    <view class="empty" wx:if="{{historyList.length===0}}">
+      暂无历史记录
+    </view>
+    <block wx:for="{{historyList}}" wx:key="packageId">
+      <view class="list-item history-item">
+        <view class="item-main">
+          <text class="item-title">{{item.merchantName || '历史包裹'}}</text>
+          <text class="item-sub">柜号 {{item.boxNo || '-'}} · {{item.pickedAtText}}</text>
+        </view>
+        <text class="done-tag">{{item.statusText}}</text>
+      </view>
+    </block>
+  </view>
+
+  <button class="help-link" bindtap="goPickupHelp">取件遇到问题</button>
+
+  <view class="hint" wx:if="{{hintText}}">
+    <text>{{hintText}}</text>
+  </view>
+</view>

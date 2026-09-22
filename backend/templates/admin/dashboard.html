@@ -1,0 +1,225 @@
+{% extends "admin/layout.html" %}
+{% set title = "运营总览" %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title-xl">系统全链路总览</div>
+    <div class="page-desc">集中展示平台接单、管理员派单、配送员入柜、用户取件和异常处理的完整业务闭环。</div>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_orders') }}">查看平台订单</a>
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.exceptions') }}">查看异常中心</a>
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.boxes') }}">查看箱体状态</a>
+  </div>
+</div>
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="summary-label">平台订单总数</div>
+    <div class="summary-value">{{ platform_order_count }}</div>
+    <div class="summary-note">系统已接入的全部平台订单</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">待派单订单</div>
+    <div class="summary-value">{{ platform_pending_dispatch_count }}</div>
+    <div class="summary-note">等待管理员选择配送员并生成任务</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">已完成订单</div>
+    <div class="summary-value">{{ platform_completed_count }}</div>
+    <div class="summary-note">已完成入柜、提醒、取件的闭环订单</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">异常 / 取消订单</div>
+    <div class="summary-value">{{ platform_closed_count }}</div>
+    <div class="summary-note">已通过取消或异常流程收口的订单</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">当前待取包裹</div>
+    <div class="summary-value">{{ pkg_pending }}</div>
+    <div class="summary-note">包裹已入柜，等待用户取件</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">当前进行中的任务</div>
+    <div class="summary-value">{{ task_in_progress_count }}</div>
+    <div class="summary-note">包括待执行、待确认和人工处理中的任务</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">空闲箱体</div>
+    <div class="summary-value">{{ box_empty_count }}</div>
+    <div class="summary-note">可直接分配新任务</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">预占箱体</div>
+    <div class="summary-value">{{ box_reserved_count }}</div>
+    <div class="summary-note">已分配任务，等待配送员完成入柜</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">占用箱体</div>
+    <div class="summary-value">{{ box_occupied_count }}</div>
+    <div class="summary-note">已有待取包裹，等待用户取件</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:12px;">
+  <div class="section-title">业务流转链路</div>
+  <div class="flow-grid" style="margin-top:12px;">
+    <div class="flow-node">
+      <div class="flow-number">1</div>
+      <div class="flow-title">平台订单接入</div>
+      <div class="flow-hint">平台推单进入系统，形成平台订单记录。</div>
+      <div class="mini-value">{{ platform_order_count }} 单累计接入</div>
+    </div>
+    <div class="flow-node">
+      <div class="flow-number">2</div>
+      <div class="flow-title">管理员派单</div>
+      <div class="flow-hint">后台给订单分配配送员，并生成配送任务。</div>
+      <div class="mini-value">{{ platform_pending_dispatch_count }} 单等待派单</div>
+    </div>
+    <div class="flow-node">
+      <div class="flow-number">3</div>
+      <div class="flow-title">配送员入柜</div>
+      <div class="flow-hint">配送员执行任务，箱体预占，系统等待确认或人工处理。</div>
+      <div class="mini-value">{{ task_in_progress_count }} 个任务处理中</div>
+    </div>
+    <div class="flow-node">
+      <div class="flow-number">4</div>
+      <div class="flow-title">提醒待取</div>
+      <div class="flow-hint">入柜确认后生成包裹记录，并进入待取件状态。</div>
+      <div class="mini-value">{{ pkg_pending }} 个包裹待取</div>
+    </div>
+    <div class="flow-node">
+      <div class="flow-number">5</div>
+      <div class="flow-title">用户取件完成</div>
+      <div class="flow-hint">用户开门取件后，订单、包裹、箱体同步收口。</div>
+      <div class="mini-value">{{ platform_completed_count }} 单已完成</div>
+    </div>
+  </div>
+</div>
+
+<div class="section-grid-2" style="margin-top:12px;">
+  <div class="card">
+    <div class="section-title">当前重点关注</div>
+    {% if dashboard_attention_items %}
+      <div class="mini-list" style="margin-top:12px;">
+        {% for item in dashboard_attention_items %}
+          <div class="mini-item">
+            <div>
+              <div class="cell-title">{{ item.label }}</div>
+              <div class="cell-sub">{{ item.hint }}</div>
+            </div>
+            <div class="cell-stack" style="align-items:flex-end;">
+              <span class="badge {{ item.badgeClass }}">{{ item.value }}</span>
+              <a href="{{ item.href }}">立即查看</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="muted" style="margin-top:12px;">当前没有需要重点关注的事项。</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="section-title">最近硬件告警</div>
+    {% if recent_alert_events %}
+      <div class="mini-list" style="margin-top:12px;">
+        {% for event in recent_alert_events %}
+          <div class="mini-item">
+            <div>
+              <div class="cell-title">箱体 {{ event.boxNo }} / {{ event.eventType }}</div>
+              <div class="cell-sub">{{ event.detail if event.detail else "已记录硬件告警事件" }}</div>
+            </div>
+            <div class="cell-stack" style="align-items:flex-end;">
+              <span class="badge b-red">{{ event.source }}</span>
+              <a href="{{ url_for('admin.locker_debug', box_no=event.boxNo) }}">查看设备诊断</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="muted" style="margin-top:12px;">最近没有新的柜门异常告警。</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card" style="margin-top:12px;">
+  <div class="section-title">最近平台订单</div>
+  {% if recent_orders %}
+    <table class="table" style="margin-top:12px;">
+      <thead>
+        <tr>
+          <th>订单</th>
+          <th>当前状态</th>
+          <th>派单 / 配送 / 包裹</th>
+          <th>当前箱体</th>
+          <th>当前关注点</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in recent_orders %}
+          {% set order = row.order %}
+          <tr>
+            <td>
+              <div class="cell-title">{{ order.platform_order_id }}</div>
+              <div class="cell-sub">{{ order.platform_name }} / {{ order.external_order_no }}</div>
+              <div class="cell-sub">{{ order.receiver_name if order.receiver_name else "-" }} / {{ order.receiver_phone }}</div>
+            </td>
+            <td>
+              <div class="cell-stack">
+                <span class="badge {{ row.status_view.badgeClass }}">{{ row.status_view.label }}</span>
+                <span class="badge {{ row.pickup_meta.badgeClass }}">{{ row.pickup_meta.label }}</span>
+                <div class="cell-sub">{{ row.status_view.description }}</div>
+              </div>
+            </td>
+            <td>
+              <div class="cell-stack">
+                <span class="badge {{ row.dispatch_meta.badgeClass }}">{{ row.dispatch_meta.label }}</span>
+                <span class="badge {{ row.task_created_meta.badgeClass }}">{{ row.task_created_meta.label }}</span>
+                <span class="badge {{ row.package_created_meta.badgeClass }}">{{ row.package_created_meta.label }}</span>
+              </div>
+            </td>
+            <td>
+              {% if row.current_box_no %}
+                <div class="cell-title">箱体 {{ row.current_box_no }}</div>
+              {% else %}
+                <div class="muted">尚未进入箱体环节</div>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge {{ row.attention_meta.badgeClass }}">{{ row.attention_meta.label }}</span>
+              <div class="cell-sub" style="margin-top:6px;">{{ row.attention_meta.hint }}</div>
+            </td>
+            <td>
+              <div class="table-actions">
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_order_detail', platform_order_id=order.platform_order_id) }}">查看详情</a>
+                {% if row.task %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.tasks', platform_order_id=order.platform_order_id) }}">查看任务</a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted" style="margin-top:12px;">当前没有可展示的平台订单。</div>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top:12px;">
+  <div class="section-title">服务接入状态</div>
+  <div class="cards" style="margin-top:12px;">
+    {% for item in integration_cards %}
+      <div class="card">
+        <div class="k">{{ item.label }}</div>
+        <div class="v" style="font-size:18px;">{{ item.modeLabel }}</div>
+        <div class="muted" style="margin-top:8px;">接入方：{{ item.providerName }}</div>
+        <div class="muted" style="margin-top:8px;">{{ item.summary }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

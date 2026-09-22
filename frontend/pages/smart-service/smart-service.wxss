@@ -1,0 +1,151 @@
+.page {
+  min-height: 100vh;
+  padding: 20px 16px 92px;
+  box-sizing: border-box;
+  background: #f4f7fb;
+}
+
+.hero,
+.quick-card,
+.chat-card,
+.input-bar {
+  border: 1px solid #e4ebf5;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  box-sizing: border-box;
+}
+
+.hero {
+  margin-bottom: 14px;
+  padding: 18px;
+  background: linear-gradient(135deg, #ffffff 0%, #eef6ff 100%);
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.title {
+  display: block;
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 900;
+  color: #111827;
+}
+
+.sub {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #64748b;
+}
+
+.quick-card {
+  margin-bottom: 14px;
+  padding: 16px;
+}
+
+.card-title {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.quick-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quick-btn {
+  margin: 0;
+  height: 34px;
+  line-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.chat-card {
+  height: 420px;
+  padding: 14px;
+}
+
+.message-row {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.message-row.is-user {
+  justify-content: flex-end;
+}
+
+.message-row.is-bot {
+  justify-content: flex-start;
+}
+
+.message-bubble {
+  max-width: 78%;
+  padding: 11px 13px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  box-sizing: border-box;
+}
+
+.is-bot .message-bubble {
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #edf2f7;
+}
+
+.is-user .message-bubble {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.input-bar {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 20px;
+}
+
+.question-input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: #f8fafc;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.send-btn {
+  width: 72px;
+  height: 42px;
+  line-height: 42px;
+  border-radius: 14px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+}

@@ -1,0 +1,408 @@
+{% extends "admin/layout.html" %}
+{% set title = "异常中心" %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title-xl">异常中心</div>
+    <div class="page-desc">集中处理配送异常、待人工判断订单和箱体告警，帮助管理员快速判断下一步处理方式。</div>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_orders', status='waiting_ai') }}">查看待确认订单</a>
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_orders', status='pending_dispatch') }}">查看待派单订单</a>
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug') }}">查看设备诊断</a>
+  </div>
+</div>
+
+{% if notice %}
+  <div class="notice {{ 'notice-error' if notice_type == 'error' else ('notice-info' if notice_type == 'info' else 'notice-success') }}">
+    {{ notice }}
+  </div>
+{% endif %}
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="summary-label">管理员待处理任务</div>
+    <div class="summary-value">{{ admin_exception_rows|length }}</div>
+    <div class="summary-note">仅统计配送员已提交管理员处理，且当前异常仍未收口的任务。</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">待人工判断订单</div>
+    <div class="summary-value">{{ waiting_rows|length }}</div>
+    <div class="summary-note">主要用于查看系统确认未通过或仍需人工判断的订单。</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">待重新派单</div>
+    <div class="summary-value">{{ rollback_rows|length }}</div>
+    <div class="summary-note">任务已回退，等待重新分配配送员。</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">箱体硬件告警</div>
+    <div class="summary-value">{{ locker_alert_boxes|length }}</div>
+    <div class="summary-note">箱门超时、离线或硬件回调顺序异常的箱体。</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">近期已关闭订单</div>
+    <div class="summary-value">{{ closed_rows|length }}</div>
+    <div class="summary-note">最近通过取消或异常流程收口的订单。</div>
+  </div>
+</div>
+
+<div class="operation-strip">
+  <div class="operation-item">
+    <div class="operation-title">优先处理</div>
+    <div class="operation-desc">配送员已提交管理员的任务，建议先确认箱体和联系人，再决定维修、通知或重新投递。</div>
+  </div>
+  <div class="operation-item">
+    <div class="operation-title">人工判断</div>
+    <div class="operation-desc">系统确认未通过或状态不明确的订单，从这里选择重试、回退派单或异常关闭。</div>
+  </div>
+  <div class="operation-item">
+    <div class="operation-title">硬件告警</div>
+    <div class="operation-desc">箱门超时、离线和状态同步异常统一进入设备诊断排查。</div>
+  </div>
+</div>
+
+<div class="card detail-card" style="margin-top:12px;">
+  <div class="section-heading">
+    <div>
+      <div class="section-title">管理员异常处理任务</div>
+      <div class="section-desc">配送员已明确提交管理员处理的待办，建议作为异常中心第一优先级。</div>
+    </div>
+    <span class="badge b-red">优先处理</span>
+  </div>
+  {% if admin_exception_rows %}
+    <table class="table" style="margin-top:12px;">
+      <thead>
+        <tr>
+          <th>任务 / 订单</th>
+          <th>联系人信息</th>
+          <th>当前状态</th>
+          <th>管理员操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in admin_exception_rows %}
+          {% set task = row.task %}
+          {% set order = row.order %}
+          <tr>
+            <td>
+              <div class="cell-title">{{ task.task_id }}</div>
+              <div class="cell-sub">箱体：{{ task.box_no if task.box_no else '-' }}</div>
+              <div class="cell-sub">
+                平台订单：
+                {% if order %}
+                  <a href="{{ url_for('admin.platform_order_detail', platform_order_id=order.platform_order_id) }}">{{ order.platform_order_id }}</a>
+                {% else %}
+                  -
+                {% endif %}
+              </div>
+              <div class="cell-sub">异常说明：{{ row.current_note }}</div>
+            </td>
+            <td>
+              <div class="cell-sub">买家：{{ row.buyer_name }} / {{ row.buyer_phone }}</div>
+              <div class="cell-sub">配送员：{{ row.courier_name }} / {{ row.courier_phone }}</div>
+              {% if order %}
+                <div class="cell-sub">平台单号：{{ order.platform_name }} / {{ order.external_order_no }}</div>
+              {% endif %}
+            </td>
+            <td>
+              <div class="cell-stack">
+                <span class="badge {{ row.exception_meta.badgeClass if row.exception_meta.badgeClass else 'b-red' }}">
+                  {{ row.exception_meta.label if row.exception_meta.label else '异常处理中' }}
+                </span>
+                <span class="badge {{ row.task_status_meta.badgeClass }}">{{ row.task_status_meta.label }}</span>
+                {% if row.order_status_view %}
+                  <span class="badge {{ row.order_status_view.badgeClass }}">{{ row.order_status_view.label }}</span>
+                {% endif %}
+              </div>
+              <div class="cell-sub" style="margin-top:6px;">最新备注：{{ row.exception_meta.note if row.exception_meta.note else '暂无备注' }}</div>
+            </td>
+            <td>
+              <div class="table-actions" style="margin-bottom:8px;">
+                {% if order %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_order_detail', platform_order_id=order.platform_order_id) }}">查看详情</a>
+                {% endif %}
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=task.box_no) }}">查看设备诊断</a>
+              </div>
+
+              <div class="table-actions" style="margin-bottom:8px;">
+                <form method="post" action="{{ url_for('admin.admin_update_exception_note', task_id=task.task_id) }}" class="inline-form">
+                  <input type="hidden" name="back_to" value="exceptions" />
+                  <input type="hidden" name="action_kind" value="repair" />
+                  <input type="hidden" name="note" value="{{ row.repair_note }}" />
+                  <button type="submit" class="btn btn-sm btn-primary">记录维修中</button>
+                </form>
+
+                <form method="post" action="{{ url_for('admin.admin_update_exception_note', task_id=task.task_id) }}" class="inline-form">
+                  <input type="hidden" name="back_to" value="exceptions" />
+                  <input type="hidden" name="action_kind" value="contact_buyer" />
+                  <input type="hidden" name="note" value="{{ row.contact_note }}" />
+                  <button type="submit" class="btn btn-sm btn-outline-primary">标记待联系买家</button>
+                </form>
+
+                <form method="post" action="{{ url_for('admin.admin_retry_task', task_id=task.task_id) }}" class="inline-form">
+                  <input type="hidden" name="back_to" value="exceptions" />
+                  <input type="hidden" name="note" value="管理员已转为重新投递" />
+                  <button type="submit" class="btn btn-sm btn-success">恢复重新投递</button>
+                </form>
+              </div>
+
+              <div class="table-actions">
+                <form method="post" action="{{ url_for('admin.admin_update_exception_note', task_id=task.task_id) }}" class="inline-form">
+                  <input type="hidden" name="back_to" value="exceptions" />
+                  <input type="hidden" name="action_kind" value="resolved" />
+                  <input type="hidden" name="note" value="{{ row.resolved_note }}" />
+                  <button type="submit" class="btn btn-sm">标记处理完成</button>
+                </form>
+                <span class="muted">联系前可直接参考手机号：买家 {{ row.buyer_phone }}，配送员 {{ row.courier_phone }}</span>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted" style="margin-top:12px;">当前没有“配送员已提交管理员处理”的待办异常任务。</div>
+  {% endif %}
+</div>
+
+<div class="card detail-card" style="margin-top:12px;">
+  <div class="section-heading">
+    <div>
+      <div class="section-title">待人工判断订单</div>
+      <div class="section-desc">状态已经进入人工判断区，管理员需要选择重试、回退派单或异常关闭。</div>
+    </div>
+    <span class="badge b-yellow">需判断</span>
+  </div>
+  {% if waiting_rows %}
+    <table class="table" style="margin-top:12px;">
+      <thead>
+        <tr>
+          <th>平台订单</th>
+          <th>任务 / 箱体</th>
+          <th>当前状态</th>
+          <th>异常说明</th>
+          <th style="width:360px;">人工处理</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in waiting_rows %}
+          {% set order = row.order %}
+          {% set task = row.task %}
+          <tr>
+            <td>
+              <div class="cell-title">{{ order.platform_order_id }}</div>
+              <div class="cell-sub">{{ order.platform_name }} / {{ order.external_order_no }}</div>
+              <div class="cell-sub">{{ order.receiver_name if order.receiver_name else '-' }} / {{ order.receiver_phone }}</div>
+            </td>
+            <td>
+              <div class="cell-sub">任务：{{ task.task_id if task else '-' }}</div>
+              <div class="cell-sub">箱体：{{ task.box_no if task else '-' }}</div>
+              <div class="cell-sub">配送员：{{ '已指派' if order.courier_openid else '未指派' }}</div>
+            </td>
+            <td>
+              <div class="cell-stack">
+                <span class="badge {{ row.status_view.badgeClass }}">{{ row.status_view.label }}</span>
+                {% if row.task_stage %}
+                  <span class="badge {{ row.task_stage.badgeClass }}">{{ row.task_stage.label }}</span>
+                {% endif %}
+              </div>
+              <div class="cell-sub" style="margin-top:6px;">{{ row.attention_meta.hint }}</div>
+            </td>
+            <td>{{ task.ai_message if task and task.ai_message else order.status_note if order.status_note else "等待管理员判断是重试、回退还是异常关闭" }}</td>
+            <td>
+              <div class="table-actions" style="margin-bottom:8px;">
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_order_detail', platform_order_id=order.platform_order_id) }}">查看详情</a>
+                {% if task %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=task.box_no) }}">查看设备诊断</a>
+                {% endif %}
+              </div>
+
+              {% if row.can_retry_task and task %}
+                <form method="post" action="{{ url_for('admin.admin_retry_task', task_id=task.task_id) }}" class="inline-form" style="margin-bottom:8px;">
+                  <input type="hidden" name="back_to" value="exceptions" />
+                  <button type="submit" class="btn btn-sm btn-primary">转为重新投递</button>
+                </form>
+              {% endif %}
+
+              {% if row.can_rollback_task and task %}
+                <form method="post" action="{{ url_for('admin.admin_rollback_task', task_id=task.task_id) }}" class="inline-form" style="margin-bottom:8px;">
+                  <input type="hidden" name="back_to" value="exceptions" />
+                  <button type="submit" class="btn btn-sm btn-outline-primary">回退到待派单</button>
+                </form>
+              {% endif %}
+
+              {% if row.can_cancel or row.can_exception %}
+                <form method="post" action="{{ url_for('admin.admin_close_platform_order', platform_order_id=order.platform_order_id) }}" class="inline-form">
+                  <input type="hidden" name="back_to" value="exceptions" />
+                  <input type="hidden" name="back_status" value="all" />
+                  {% if row.can_cancel %}
+                    <button type="submit" class="btn btn-sm btn-outline-primary" name="target_status" value="cancelled">取消订单</button>
+                  {% endif %}
+                  {% if row.can_exception %}
+                    <button type="submit" class="btn btn-sm btn-danger" name="target_status" value="exception">异常关闭</button>
+                  {% endif %}
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted" style="margin-top:12px;">当前没有待人工判断的订单。</div>
+  {% endif %}
+</div>
+
+<div class="detail-grid" style="margin-top:12px;">
+  <div class="card detail-card">
+    <div class="section-heading">
+      <div>
+        <div class="section-title">待重新派单订单</div>
+        <div class="section-desc">任务已回退，等待管理员重新选择配送员。</div>
+      </div>
+      <span class="badge b-blue">待派单</span>
+    </div>
+    {% if rollback_rows %}
+      <table class="table" style="margin-top:12px;">
+        <thead>
+          <tr>
+            <th>平台订单</th>
+            <th>最近任务</th>
+            <th>状态</th>
+            <th style="width:300px;">后续处理</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rollback_rows %}
+            {% set order = row.order %}
+            {% set task = row.task %}
+            <tr>
+              <td>
+                <div class="cell-title">{{ order.platform_order_id }}</div>
+                <div class="cell-sub">{{ order.platform_name }} / {{ order.external_order_no }}</div>
+                <div class="cell-sub">{{ order.receiver_name if order.receiver_name else '-' }} / {{ order.receiver_phone }}</div>
+              </td>
+              <td>
+                <div class="cell-sub">任务：{{ task.task_id if task else '-' }}</div>
+                <div class="cell-sub">当前阶段：{{ row.status_view.label if row.status_view else '-' }}</div>
+                <div class="cell-sub">{{ task.ai_message if task and task.ai_message else "等待重新分配配送员" }}</div>
+              </td>
+              <td>
+                <span class="badge {{ row.status_view.badgeClass }}">{{ row.status_view.label }}</span>
+                <div class="cell-sub" style="margin-top:6px;">{{ row.status_view.description }}</div>
+              </td>
+              <td>
+                <div class="table-actions" style="margin-bottom:8px;">
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_order_detail', platform_order_id=order.platform_order_id) }}">查看详情</a>
+                </div>
+                {% if row.can_dispatch %}
+                  <form method="post" action="{{ url_for('admin.admin_dispatch_platform_order', platform_order_id=order.platform_order_id) }}" class="inline-form">
+                    <input type="hidden" name="back_to" value="exceptions" />
+                    <input type="hidden" name="back_status" value="all" />
+                    <select name="courier_openid" class="input select-input">
+                      <option value="">选择已审核通过的配送员</option>
+                      {% for c in approved_couriers %}
+                        {% set courier_user = courier_user_map.get(c.openid) if courier_user_map else None %}
+                        <option value="{{ c.openid }}">
+                          {{ courier_user.username if courier_user and courier_user.username else '未命名用户' }} / {{ c.phone_number if c.phone_number else '已认证配送员' }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-success">重新派单</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="muted" style="margin-top:12px;">当前没有待重新派单的订单。</div>
+    {% endif %}
+  </div>
+
+  <div class="card detail-card">
+    <div class="section-heading">
+      <div>
+        <div class="section-title">箱体硬件告警</div>
+        <div class="section-desc">优先排查会影响开门、关门或状态同步的箱体。</div>
+      </div>
+      <span class="badge b-red">需排查</span>
+    </div>
+    {% if locker_alert_boxes %}
+      <div class="mini-list" style="margin-top:12px;">
+        {% for item in locker_alert_boxes %}
+          {% set box = item.box %}
+          {% set hardware = item.hardware %}
+          {% set task = item.task %}
+          {% set order = item.order %}
+          <div class="mini-item">
+            <div>
+              <div class="cell-title">箱体 {{ box.box_no }}</div>
+              <div class="cell-sub">{{ hardware.latestAlertEvent.eventTypeLabel if hardware and hardware.latestAlertEvent else "硬件告警" }}</div>
+              <div class="cell-sub">{{ hardware.latestAlertEvent.detail if hardware and hardware.latestAlertEvent and hardware.latestAlertEvent.detail else "存在箱门超时、离线或回调顺序异常" }}</div>
+              {% if order %}
+                <div class="cell-sub">关联订单：{{ order.platform_order_id }}</div>
+              {% endif %}
+              {% if task %}
+                <div class="cell-sub">关联任务：{{ task.task_id }}</div>
+              {% endif %}
+            </div>
+            <div class="cell-stack" style="align-items:flex-end;">
+              <span class="badge b-red">需要排查</span>
+              <a href="{{ url_for('admin.locker_debug', box_no=box.box_no) }}">查看设备诊断</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="muted" style="margin-top:12px;">当前没有处于告警状态的箱体。</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card detail-card" style="margin-top:12px;">
+  <div class="section-heading">
+    <div>
+      <div class="section-title">最近硬件异常事件</div>
+      <div class="section-desc">按时间追踪最近的箱体异常回调，便于演示和复盘。</div>
+    </div>
+  </div>
+  {% if recent_hardware_alerts %}
+    <table class="table" style="margin-top:12px;">
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>箱体</th>
+          <th>事件类型</th>
+          <th>来源</th>
+          <th>说明</th>
+          <th>查看</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in recent_hardware_alerts %}
+          <tr>
+            <td>{{ event.createdAt if event.createdAt else "-" }}</td>
+            <td>{{ event.boxNo }}</td>
+            <td><span class="badge b-red">{{ event.eventTypeLabel }}</span></td>
+            <td>{{ event.sourceLabel }}</td>
+            <td>{{ event.detail if event.detail else "-" }}</td>
+            <td>
+              {% if event.commandId %}
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=event.boxNo, command_id=event.commandId) }}">查看诊断</a>
+              {% else %}
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=event.boxNo) }}">查看诊断</a>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted" style="margin-top:12px;">最近没有新的硬件异常事件。</div>
+  {% endif %}
+</div>
+{% endblock %}

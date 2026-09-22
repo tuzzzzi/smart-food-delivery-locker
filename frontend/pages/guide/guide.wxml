@@ -1,0 +1,280 @@
+<view class="page {{role==='courier' ? 'courier-page' : ''}}">
+  <view class="hero">
+    <view>
+      <text class="eyebrow">{{role==='courier' ? '配送员流程' : '用户取件'}}</text>
+      <text class="title">{{pageTitle}}</text>
+      <text class="sub">{{pageSubTitle}}</text>
+    </view>
+    <text class="role-chip {{role==='courier' ? 'role-courier' : 'role-user'}}">
+      {{role==='courier' ? '配送员' : '用户'}}
+    </text>
+  </view>
+
+  <view class="courier-priority-card" wx:if="{{role==='courier' && task}}">
+    <view class="priority-head">
+      <view>
+        <text class="section-kicker">当前状态</text>
+        <text class="priority-title">{{task.courierStatusTitle}}</text>
+      </view>
+      <text class="status-chip {{task.courierStatusClass}}">{{task.courierStatusTitle}}</text>
+    </view>
+
+    <view class="priority-grid">
+      <view class="priority-item wide">
+        <text class="info-label">当前任务</text>
+        <text class="info-value">{{task.displayTitle}}</text>
+      </view>
+      <view class="priority-item">
+        <text class="info-label">当前柜号</text>
+        <text class="info-value strong-value">{{task.boxNo || '-'}}</text>
+      </view>
+      <view class="priority-item">
+        <text class="info-label">收件人</text>
+        <text class="info-value">{{task.receiverPhoneText}}</text>
+      </view>
+    </view>
+
+    <view class="reason-card" wx:if="{{task.failureReasonText}}">
+      <text class="reason-title">失败原因</text>
+      <text class="reason-text">{{task.failureReasonText}}</text>
+    </view>
+
+    <view class="next-card compact-next">
+      <text class="next-title">处理建议</text>
+      <text class="next-desc">{{task.actionAdviceText}}</text>
+    </view>
+
+    <view class="action-row">
+      <button
+        class="btn primary half-btn"
+        bindtap="confirmPutInBoxAndStartPolling"
+        loading="{{loadingAction}}"
+        disabled="{{loadingAction || courierLockerPending}}"
+        wx:if="{{task.canSubmit}}"
+      >
+        {{task.primaryActionText}}
+      </button>
+
+      <button
+        class="btn primary half-btn"
+        bindtap="resumeAiPolling"
+        disabled="{{polling || loadingAction || courierLockerPending}}"
+        wx:if="{{task.canResumeAi}}"
+      >
+        {{task.primaryActionText}}
+      </button>
+
+      <button wx:if="{{task.canConfirmReturn}}" class="btn success half-btn" bindtap="confirmAndReturn">
+        返回工作台
+      </button>
+
+      <button
+        class="btn ghost half-btn"
+        bindtap="goToDeliveryError"
+        wx:if="{{task.status==='ai_failed' || task.hasActiveException}}"
+        disabled="{{loadingAction}}"
+      >
+        提交管理员处理
+      </button>
+    </view>
+
+    <view class="action-row" wx:if="{{task.verifyToken}}">
+      <button class="btn ghost half-btn" bindtap="goVerifyInfo">查看核验信息</button>
+      <button class="btn ghost half-btn" bindtap="scanVerifyQr">扫一扫核验</button>
+    </view>
+
+    <view class="notice-card inline-notice" wx:if="{{courierLockerPending}}">
+      <text class="notice-title">柜门状态同步中</text>
+      <text class="notice-desc">请完成开门、放入包裹和关门，系统确认后会进入检测。</text>
+    </view>
+
+    <view class="notice-card inline-notice" wx:if="{{polling}}">
+      <text class="notice-title">包裹确认中</text>
+      <text class="notice-desc">系统正在确认包裹，请稍候。</text>
+      <button class="btn ghost slim-btn" bindtap="stopPolling">停止等待</button>
+    </view>
+  </view>
+
+  <view class="compact-steps" wx:if="{{role==='courier' && guideSteps.length}}">
+    <block wx:for="{{guideSteps}}" wx:key="key">
+      <view class="compact-step step-{{item.state}}">
+        <text class="compact-dot">{{index + 1}}</text>
+        <text class="compact-label">{{item.label}}</text>
+      </view>
+    </block>
+  </view>
+
+  <view class="courier-mini-card" wx:if="{{role==='courier' && depositEvidence}}">
+    <view class="mini-head">
+      <view>
+        <text class="section-kicker">图片凭证</text>
+        <text class="section-title">关门后现场照片</text>
+      </view>
+      <button class="toggle-btn" bindtap="toggleCourierEvidence">{{showCourierEvidence ? '收起' : '查看'}}</button>
+    </view>
+    <view class="thumb-row" wx:if="{{depositEvidence.previewImageUrl && !showCourierEvidence}}">
+      <image class="proof-thumb" src="{{depositEvidence.previewImageUrl}}" mode="aspectFill"></image>
+      <view class="thumb-text">
+        <text class="thumb-title">{{depositEvidence.evidenceStatusText}}</text>
+        <text class="thumb-desc">用于核对本次关门后的现场状态。</text>
+      </view>
+    </view>
+    <view wx:if="{{showCourierEvidence}}">
+      <image class="proof-image compact-proof" wx:if="{{depositEvidence.previewImageUrl}}" src="{{depositEvidence.previewImageUrl}}" mode="aspectFill"></image>
+      <view class="image-placeholder" wx:else>
+        <text class="placeholder-title">图片凭证生成中</text>
+        <text class="placeholder-text">系统完成留痕后会展示本次图片。</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="courier-mini-card" wx:if="{{role==='courier' && task}}">
+    <view class="mini-head">
+      <view>
+        <text class="section-kicker">柜体定位</text>
+        <text class="section-title">当前柜号 {{task.boxNo || '-'}}，{{task.boxLocationText}}</text>
+      </view>
+      <button class="toggle-btn" bindtap="toggleCabinetGrid">{{showCabinetGrid ? '收起' : '查看柜体'}}</button>
+    </view>
+    <view class="cabinet" wx:if="{{showCabinetGrid && cabinetRows.length}}">
+      <block wx:for="{{cabinetRows}}" wx:for-item="row" wx:for-index="rowIndex" wx:key="rowIndex">
+        <view class="cabinet-row">
+          <block wx:for="{{row}}" wx:for-item="cell" wx:key="boxNo">
+            <view class="cabinet-cell {{cell.boxNo === highlightBox ? 'highlight' : ''}} {{cell.status}}">
+              <text class="box-no">{{cell.boxNo}}</text>
+              <text class="box-status">{{cell.statusText}}</text>
+            </view>
+          </block>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <view class="notice-card success-notice" wx:if="{{role==='courier' && pkg}}">
+    <text class="notice-title">投递完成</text>
+    <text class="notice-desc">包裹已入柜，用户可在取件中心查看凭证。</text>
+    <button class="btn ghost slim-btn" bindtap="goPackageDetail" wx:if="{{pkg.packageId}}">查看图片凭证</button>
+  </view>
+
+  <view class="info-card user-main-card" wx:if="{{role==='user' && pkg}}">
+    <view class="card-head">
+      <view>
+        <text class="section-kicker">当前待取</text>
+        <text class="section-title">{{pkg.merchantName || '校园外卖包裹'}}</text>
+      </view>
+      <text class="status-chip chip-blue">{{lockerView ? lockerView.phaseLabel : pkg.statusText}}</text>
+    </view>
+
+    <view class="locker-block">
+      <text class="locker-label">取件柜号</text>
+      <text class="locker-no">{{pkg.boxNo || '-'}}</text>
+    </view>
+
+    <view class="info-grid">
+      <view class="info-item" wx:if="{{pkg.arrivedAtText}}">
+        <text class="info-label">入柜时间</text>
+        <text class="info-value">{{pkg.arrivedAtText}}</text>
+      </view>
+      <view class="info-item pickup-code-item">
+        <text class="info-label">取件码</text>
+        <text class="info-value pickup-code-value">{{pkg.pickupCodeText || '暂无'}}</text>
+      </view>
+      <view class="info-item" wx:if="{{pkg.pickedAtText}}">
+        <text class="info-label">完成时间</text>
+        <text class="info-value">{{pkg.pickedAtText}}</text>
+      </view>
+    </view>
+
+    <view class="next-card">
+      <text class="next-title">当前提示</text>
+      <text class="next-desc">{{lockerView ? lockerView.hint : '请按步骤完成取件。'}}</text>
+    </view>
+
+    <view class="action-row pickup-actions">
+      <button
+        wx:if="{{pkg.status === 'pending'}}"
+        class="btn primary half-btn"
+        bindtap="openDoor"
+        loading="{{loadingAction}}"
+        disabled="{{loadingAction || !canOpenPickup}}"
+      >
+        {{loadingAction ? '正在开门...' : '打开柜门取件'}}
+      </button>
+
+      <button wx:if="{{pkg.status === 'picked'}}" class="btn success half-btn" bindtap="confirmAndReturn">
+        返回首页
+      </button>
+
+      <button class="btn ghost half-btn" bindtap="goPackageDetail" wx:if="{{pkg.packageId}}">
+        查看入柜照片
+      </button>
+    </view>
+
+    <view class="action-row" wx:if="{{pkg.verifyToken}}">
+      <button class="btn ghost half-btn" bindtap="goVerifyInfo">查看核验信息</button>
+      <button class="btn ghost half-btn" bindtap="scanVerifyQr">扫一扫核验</button>
+    </view>
+
+    <button class="weak-error-btn inline-error-btn" bindtap="goToDeliveryError">
+      取件遇到问题
+    </button>
+  </view>
+
+  <view class="steps-card user-steps-card" wx:if="{{role==='user' && guideSteps.length}}">
+    <view class="compact-title">取件步骤</view>
+    <view class="user-step-row">
+      <block wx:for="{{guideSteps}}" wx:key="key">
+        <view class="compact-step step-{{item.state}}">
+          <text class="compact-dot">{{index + 1}}</text>
+          <text class="compact-label">{{item.label}}</text>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <view class="evidence-card" wx:if="{{role==='user' && depositEvidence}}">
+    <view class="card-head">
+      <view>
+        <text class="section-kicker">入柜凭证</text>
+        <text class="section-title">入柜照片</text>
+      </view>
+      <text class="status-chip {{depositEvidence.aiStatusClass || 'chip-blue'}}">{{depositEvidence.aiStatusText || depositEvidence.evidenceStatusText}}</text>
+    </view>
+    <image class="proof-image" wx:if="{{depositEvidence.previewImageUrl}}" src="{{depositEvidence.previewImageUrl}}" mode="aspectFill"></image>
+    <view class="image-placeholder" wx:else>
+      <text class="placeholder-title">入柜凭证生成中</text>
+      <text class="placeholder-text">系统完成留痕后会展示本次图片。</text>
+    </view>
+  </view>
+
+  <view class="cabinet-card" wx:if="{{role==='user' && cabinetRows.length}}">
+    <view class="card-head">
+      <view>
+        <text class="section-kicker">柜体定位</text>
+        <text class="section-title">{{highlightBox ? ('当前柜号 ' + highlightBox) : '柜体分布'}}</text>
+        <text class="section-desc">{{currentBoxLocationText}}</text>
+      </view>
+      <button class="toggle-btn" bindtap="toggleCabinetGrid">{{showCabinetGrid ? '收起' : '展开查看全部柜门'}}</button>
+    </view>
+    <view class="current-cabinet" wx:if="{{!showCabinetGrid}}">
+      <text class="current-box-no">{{highlightBox || '-'}}</text>
+      <text class="current-box-desc">{{currentBoxLocationText || '柜号待同步'}}</text>
+    </view>
+    <view class="cabinet" wx:if="{{showCabinetGrid}}">
+      <block wx:for="{{cabinetRows}}" wx:for-item="row" wx:for-index="rowIndex" wx:key="rowIndex">
+        <view class="cabinet-row">
+          <block wx:for="{{row}}" wx:for-item="cell" wx:key="boxNo">
+            <view class="cabinet-cell {{cell.boxNo === highlightBox ? 'highlight' : ''}} {{cell.status}}">
+              <text class="box-no">{{cell.boxNo}}</text>
+              <text class="box-status">{{cell.statusText}}</text>
+            </view>
+          </block>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <view class="hint" wx:if="{{hintText}}">
+    <text>{{hintText}}</text>
+  </view>
+</view>

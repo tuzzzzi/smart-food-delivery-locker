@@ -1,0 +1,40 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">智能客服</text>
+    <text class="title">取件与投递助手</text>
+    <text class="sub">可以直接提问，也可以点击下方常见问题快速查看处理建议。</text>
+  </view>
+
+  <view class="quick-card">
+    <text class="card-title">常见问题</text>
+    <view class="quick-list">
+      <block wx:for="{{quickQuestions}}" wx:key="text">
+        <button class="quick-btn" bindtap="askQuick" data-question="{{item.text}}">
+          {{item.text}}
+        </button>
+      </block>
+    </view>
+  </view>
+
+  <scroll-view class="chat-card" scroll-y="true" scroll-into-view="{{scrollIntoView}}">
+    <block wx:for="{{messages}}" wx:key="id">
+      <view id="{{item.id}}" class="message-row {{item.from === 'user' ? 'is-user' : 'is-bot'}}">
+        <view class="message-bubble">
+          <text>{{item.text}}</text>
+        </view>
+      </view>
+    </block>
+  </scroll-view>
+
+  <view class="input-bar">
+    <input
+      class="question-input"
+      value="{{inputText}}"
+      placeholder="请输入你的问题"
+      confirm-type="send"
+      bindinput="onInput"
+      bindconfirm="sendMessage"
+    />
+    <button class="send-btn" bindtap="sendMessage">发送</button>
+  </view>
+</view>

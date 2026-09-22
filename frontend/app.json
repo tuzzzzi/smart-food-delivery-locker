@@ -1,0 +1,22 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/role-select/role-select",
+    "pages/register/register",
+    "pages/guide/guide",
+    "pages/user-home/user-home",
+    "pages/user-profile/user-profile",
+    "pages/remind-list/remind-list",
+    "pages/smart-service/smart-service",
+    "pages/courier-apply/courier-apply",
+    "pages/courier-home/courier-home",
+    "pages/courier-profile/courier-profile",
+    "pages/courier-create/courier-create",
+    "pages/delivery-error/delivery-error",
+    "pages/order-verify/order-verify",
+    "pages/take-package/take-package"
+  ],
+  "window": {
+    "navigationBarTitleText": "智能外卖存取系统"
+  }
+}

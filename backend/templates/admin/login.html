@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>管理员登录</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}" />
+</head>
+<body>
+  <div class="main" style="max-width: 720px; margin: 48px auto;">
+    <div class="card" style="padding: 24px;">
+      <div class="section-title">管理员登录</div>
+      <div class="muted" style="margin-top: 8px;">
+        请输入管理员凭证。已配置快捷入口时，可直接选择身份进入后台。
+      </div>
+
+      {% if message %}
+        <div class="notice notice-error" style="margin-top: 16px;">{{ message }}</div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('admin.login') }}" class="stack-form" style="margin-top: 16px;">
+        <input type="hidden" name="next" value="{{ next_url }}" />
+        <label>
+          <div style="margin-bottom: 6px;">管理员凭证</div>
+          <input class="input" name="token" value="{{ token_value }}" placeholder="请输入管理员凭证" />
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-sm btn-primary">登录后台</button>
+        </div>
+      </form>
+
+      {% if mock_admin_identities %}
+        <div class="muted" style="margin-top: 18px;">管理员快捷登录：</div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+          {% for item in mock_admin_identities %}
+            <form method="post" action="{{ url_for('admin.login') }}" style="margin: 0;">
+              <input type="hidden" name="next" value="{{ next_url }}" />
+              <input type="hidden" name="token" value="{{ item.openid }}" />
+              <button type="submit" class="btn btn-sm btn-outline-primary">{{ item.label }}</button>
+            </form>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

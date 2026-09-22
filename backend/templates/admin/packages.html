@@ -1,0 +1,188 @@
+{% extends "admin/layout.html" %}
+{% set title = "包裹列表" %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title-xl">包裹列表</div>
+    <div class="page-desc">用于展示已完成入柜后的包裹状态、关联订单和配送任务，以及管理员手动提醒入口。</div>
+  </div>
+  <div class="page-actions">
+    {% if selected_order %}
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_order_detail', platform_order_id=selected_order.platform_order_id) }}">查看平台订单</a>
+    {% endif %}
+    {% if selected_task %}
+      {% if selected_task.platform_order_id %}
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.tasks', platform_order_id=selected_task.platform_order_id) }}">查看任务页</a>
+      {% else %}
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.tasks') }}">查看任务页</a>
+      {% endif %}
+    {% endif %}
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.packages') }}">查看全部包裹</a>
+  </div>
+</div>
+
+{% if selected_order or selected_task %}
+  <div class="notice notice-info" style="margin-bottom:12px;">
+    {% if selected_order %}
+      当前按平台订单 <span class="code">{{ selected_order.platform_order_id }}</span> 查看关联包裹。
+    {% endif %}
+    {% if selected_task %}
+      当前按配送任务 <span class="code">{{ selected_task.task_id }}</span> 查看关联包裹。
+    {% endif %}
+  </div>
+{% endif %}
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="summary-label">当前包裹数</div>
+    <div class="summary-value">{{ package_stats.total }}</div>
+    <div class="summary-note">当前筛选范围内的包裹数量</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">待取件</div>
+    <div class="summary-value">{{ package_stats.pending }}</div>
+    <div class="summary-note">包裹已入柜，等待用户取件</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">已取件</div>
+    <div class="summary-value">{{ package_stats.picked }}</div>
+    <div class="summary-note">用户已完成取件</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:12px;">
+  <div class="page-actions">
+    <strong>状态筛选：</strong>
+    <a class="btn btn-sm {{ 'btn-primary' if current_status == 'all' else 'btn-outline-primary' }}"
+       href="{{ url_for('admin.packages', status='all', platform_order_id=platform_order_id, task_id=task_id) }}">全部</a>
+    <a class="btn btn-sm {{ 'btn-primary' if current_status == 'pending' else 'btn-outline-primary' }}"
+       href="{{ url_for('admin.packages', status='pending', platform_order_id=platform_order_id, task_id=task_id) }}">待取件</a>
+    <a class="btn btn-sm {{ 'btn-primary' if current_status == 'picked' else 'btn-outline-primary' }}"
+       href="{{ url_for('admin.packages', status='picked', platform_order_id=platform_order_id, task_id=task_id) }}">已取件</a>
+  </div>
+</div>
+
+<div class="card" style="margin-top:12px;">
+  {% if package_rows %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>包裹</th>
+          <th>当前状态</th>
+          <th>关联订单 / 任务</th>
+          <th>箱体与取件码</th>
+          <th>提醒 / 取件结果</th>
+          <th>创建时间</th>
+          <th style="width: 320px;">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in package_rows %}
+          {% set p = row.package %}
+          {% set task = row.task %}
+          {% set order = row.order %}
+          <tr>
+            <td>
+              <div class="cell-title">{{ p.package_id }}</div>
+              <div class="cell-sub">收件账号：{{ "已匹配" if p.receiver_openid else "未匹配" }}</div>
+              <div class="cell-sub">创建：{{ p.created_at|dt_local }}</div>
+            </td>
+            <td>
+              <div class="cell-stack">
+                <span class="badge {{ row.status_meta.badgeClass }}">{{ row.status_meta.label }}</span>
+                {% if row.order_status_view %}
+                  <span class="badge {{ row.order_status_view.badgeClass }}">{{ row.order_status_view.label }}</span>
+                {% endif %}
+              </div>
+              <div class="cell-sub" style="margin-top:6px;">{{ row.status_meta.hint }}</div>
+            </td>
+            <td>
+              {% if order %}
+                <div class="cell-title"><a href="{{ url_for('admin.platform_order_detail', platform_order_id=order.platform_order_id) }}">{{ order.platform_order_id }}</a></div>
+                <div class="cell-sub">{{ order.platform_name }} / {{ order.external_order_no }}</div>
+              {% else %}
+                <div class="muted">无关联平台订单</div>
+              {% endif %}
+              {% if task %}
+                <div class="cell-sub">
+                  配送任务：
+                  {% if task.platform_order_id %}
+                    <a href="{{ url_for('admin.tasks', platform_order_id=task.platform_order_id) }}">{{ task.task_id }}</a>
+                  {% else %}
+                    <a href="{{ url_for('admin.tasks') }}">{{ task.task_id }}</a>
+                  {% endif %}
+                </div>
+                {% if row.latest_command %}
+                  <div class="cell-sub">视频留痕：{{ row.latest_command.videoStatusLabelLocal if row.latest_command.videoStatusLabelLocal else '-' }}</div>
+                  <div class="cell-sub">图片留痕：{{ row.latest_command.snapshotStatusLabelLocal if row.latest_command.snapshotStatusLabelLocal else '-' }} / {{ row.latest_command.resultImageStatusLabelLocal if row.latest_command.resultImageStatusLabelLocal else '-' }}</div>
+                {% endif %}
+                {% if row.task_stage %}
+                  <div class="cell-sub"><span class="badge {{ row.task_stage.badgeClass }}">{{ row.task_stage.label }}</span></div>
+                {% endif %}
+              {% endif %}
+              {% if row.latest_command %}
+                <div class="cell-sub">
+                  设备记录：
+                  <a href="{{ url_for('admin.locker_debug', box_no=p.box_no, command_id=row.latest_command.commandId) }}"><span class="code">{{ row.latest_command.commandId }}</span></a>
+                  {% if row.latest_command.commandSceneLabel %}
+                    / {{ row.latest_command.commandSceneLabel }}
+                  {% endif %}
+                </div>
+              {% else %}
+                <div class="cell-sub">设备记录：暂无开门记录</div>
+              {% endif %}
+            </td>
+            <td>
+              <div class="cell-title">箱体 {{ p.box_no }}</div>
+              <div class="cell-sub">取件码：<span class="code">{{ p.pickup_code }}</span></div>
+              {% if row.latest_command %}
+                <div class="cell-sub">
+                  <span class="badge {{ row.latest_command.statusMeta.badgeClass }}">{{ row.latest_command.statusMeta.label }}</span>
+                  <span class="badge {{ row.latest_command.businessMeta.badgeClass }}">{{ row.latest_command.businessMeta.label }}</span>
+                </div>
+              {% endif %}
+            </td>
+            <td>
+              <div class="cell-sub">入柜时间：{{ row.arrived_at_text }}</div>
+              <div class="cell-sub">取件时间：{{ row.picked_at_text }}</div>
+            </td>
+            <td>
+              <div class="cell-sub">创建：{{ p.created_at|dt_local }}</div>
+              <div class="cell-sub">最近状态：{{ row.status_meta.label }}</div>
+            </td>
+            <td>
+              <div class="table-actions">
+                {% if order %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_order_detail', platform_order_id=order.platform_order_id) }}">查看订单</a>
+                {% endif %}
+                {% if task %}
+                  {% if task.platform_order_id %}
+                    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.tasks', platform_order_id=task.platform_order_id) }}">查看任务</a>
+                  {% else %}
+                    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.tasks') }}">查看任务</a>
+                  {% endif %}
+                {% endif %}
+                {% if row.latest_command %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=p.box_no, command_id=row.latest_command.commandId) }}">查看设备诊断</a>
+                {% else %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=p.box_no) }}">查看箱体</a>
+                {% endif %}
+              </div>
+              <form method="post"
+                    action="{{ url_for('admin.admin_remind_package', package_id=p.package_id, platform_order_id=platform_order_id, task_id=task_id, status=current_status) }}"
+                    class="inline-form"
+                    style="margin-top:8px;">
+                <input name="note" class="input" placeholder="提醒内容（可选）" />
+                <button class="btn btn-sm btn-primary" type="submit">手动提醒</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted">当前筛选条件下没有包裹。</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,491 @@
+{% extends "admin/layout.html" %}
+{% set title = "平台订单详情" %}
+
+{% block content %}
+{% set order = row.order %}
+{% set task = row.task %}
+{% set pkg = row.package %}
+{% set status_view = row.status_view %}
+{% set courier_user = courier_user_map.get(order.courier_openid) if courier_user_map and order.courier_openid else None %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title-xl">平台订单详情</div>
+    <div class="page-desc">围绕单个订单展示接入、派单、入柜、待取、取件完成的完整生命周期，便于现场讲解业务闭环。</div>
+    <div class="cell-sub" style="margin-top:6px;">订单编号：<span class="code">{{ order.platform_order_id }}</span></div>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_orders') }}">返回平台订单</a>
+    {% if task %}
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.tasks', platform_order_id=order.platform_order_id) }}">查看任务</a>
+    {% endif %}
+    {% if task or pkg %}
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.packages', platform_order_id=order.platform_order_id) }}">查看包裹</a>
+    {% endif %}
+    {% if current_box %}
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=current_box.box_no) }}">查看设备诊断</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if notice %}
+  <div class="notice {{ 'notice-error' if notice_type == 'error' else ('notice-info' if notice_type == 'info' else 'notice-success') }}">
+    {{ notice }}
+  </div>
+{% endif %}
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="summary-label">当前订单状态</div>
+    <div class="summary-value" style="font-size:18px;">
+      <span class="badge {{ status_view.badgeClass }}">{{ status_view.label }}</span>
+    </div>
+    <div class="summary-note">{{ status_view.description }}</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">派单情况</div>
+    <div class="summary-value" style="font-size:18px;">
+      <span class="badge {{ row.dispatch_meta.badgeClass }}">{{ row.dispatch_meta.label }}</span>
+    </div>
+    <div class="summary-note">
+      {% if courier_user or order.courier_openid %}
+        {{ courier_user.username if courier_user and courier_user.username else "配送员" }}
+      {% else %}
+        {{ row.dispatch_meta.hint }}
+      {% endif %}
+    </div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">配送任务</div>
+    <div class="summary-value" style="font-size:18px;">
+      <span class="badge {{ row.task_created_meta.badgeClass }}">{{ row.task_created_meta.label }}</span>
+    </div>
+    <div class="summary-note">
+      {% if task %}
+        {{ task.task_id }} / {{ row.task_status_meta.label }}
+      {% else %}
+        {{ row.task_created_meta.hint }}
+      {% endif %}
+    </div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">包裹状态</div>
+    <div class="summary-value" style="font-size:18px;">
+      <span class="badge {{ row.package_created_meta.badgeClass }}">{{ row.package_created_meta.label }}</span>
+    </div>
+    <div class="summary-note">
+      {% if pkg %}
+        {{ pkg.package_id }} / {{ row.package_status_meta.label }}
+      {% else %}
+        {{ row.package_created_meta.hint }}
+      {% endif %}
+    </div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">取件结果</div>
+    <div class="summary-value" style="font-size:18px;">
+      <span class="badge {{ row.pickup_meta.badgeClass }}">{{ row.pickup_meta.label }}</span>
+    </div>
+    <div class="summary-note">{{ row.pickup_meta.hint }}</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">当前箱体</div>
+    <div class="summary-value" style="font-size:18px;">
+      {% if current_box %}
+        <span class="badge {{ current_box_status_meta.badgeClass }}">{{ current_box.box_no }}</span>
+      {% else %}
+        <span class="badge b-gray">未进入箱体环节</span>
+      {% endif %}
+    </div>
+    <div class="summary-note">
+      {% if current_box_status_meta %}
+        {{ current_box_status_meta.label }} / {{ current_box_status_meta.hint }}
+      {% else %}
+        当前还没有关联箱体
+      {% endif %}
+    </div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">柜门记录</div>
+    <div class="summary-value" style="font-size:18px;">
+      {% if current_box_command %}
+        <a href="{{ url_for('admin.locker_debug', box_no=current_box.box_no, command_id=current_box_command.commandId) }}"><span class="badge {{ current_box_command.businessMeta.badgeClass }}">查看记录</span></a>
+      {% else %}
+        <span class="badge b-gray">暂无记录</span>
+      {% endif %}
+    </div>
+    <div class="summary-note">
+      {% if current_box_command %}
+        {{ current_box_command.statusMeta.label }} / {{ current_box_command.businessMeta.label }}{% if current_box_command.pendingHardware %} / 等待设备同步{% endif %}
+      {% else %}
+        当前还没有可用的柜门记录
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card detail-card" style="margin-top:12px;">
+  <div class="section-heading">
+    <div>
+      <div class="section-title">二维码核验</div>
+      <div class="section-desc">该二维码仅用于核验收件人、商家、柜号、状态和校验码，不作为取件入口。</div>
+    </div>
+  </div>
+  <div class="qr-verify-panel">
+    {% if qr_image_url %}
+      <img class="qr-verify-image" src="{{ qr_image_url }}" alt="订单核验二维码" />
+    {% else %}
+      <div class="media-placeholder">
+        <div class="media-placeholder-title">二维码生成中</div>
+        <div class="media-placeholder-text">刷新订单详情后可查看核验二维码。</div>
+      </div>
+    {% endif %}
+    <div class="qr-verify-meta">
+      <div class="detail-row"><strong>校验码：</strong><span class="code">{{ order.verify_code if order.verify_code else "-" }}</span></div>
+      <div class="detail-row"><strong>核验接口：</strong><span class="code">/api/order/verify_qr/{{ order.qr_token if order.qr_token else "-" }}</span></div>
+      <div class="detail-row"><strong>展示信息：</strong>收件人、商家、柜号、当前状态、校验码</div>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:12px;">
+  <div class="section-title">链路关系总览</div>
+  <div class="mini-list" style="margin-top:12px;">
+    <div class="mini-item">
+      <div>
+        <div class="cell-title">1. 平台订单接入</div>
+        <div class="cell-sub">{{ order.platform_name }} / {{ order.external_order_no }}</div>
+      </div>
+      <div class="cell-stack" style="align-items:flex-end;">
+        <span class="badge {{ status_view.badgeClass }}">{{ status_view.label }}</span>
+        <span class="cell-sub">{{ order.created_at|dt_local }}</span>
+      </div>
+    </div>
+    <div class="mini-item">
+      <div>
+        <div class="cell-title">2. 管理员派单</div>
+        <div class="cell-sub">
+          {% if order.courier_openid %}
+            已派给 {{ courier_user.username if courier_user and courier_user.username else "配送员" }}
+          {% else %}
+            还未指派配送员
+          {% endif %}
+        </div>
+      </div>
+      <div class="cell-stack" style="align-items:flex-end;">
+        <span class="badge {{ row.dispatch_meta.badgeClass }}">{{ row.dispatch_meta.label }}</span>
+        <span class="cell-sub">{{ order.dispatched_at|dt_local if order.dispatched_at else "-" }}</span>
+      </div>
+    </div>
+    <div class="mini-item">
+      <div>
+        <div class="cell-title">3. 配送任务执行</div>
+        <div class="cell-sub">
+          {% if task %}
+            配送任务已生成 / 箱体 {{ task.box_no }}
+          {% else %}
+            当前还没有生成配送任务
+          {% endif %}
+        </div>
+      </div>
+      <div class="cell-stack" style="align-items:flex-end;">
+        <span class="badge {{ row.task_created_meta.badgeClass }}">{{ row.task_created_meta.label }}</span>
+        {% if row.task_status_meta %}
+          <span class="badge {{ row.task_status_meta.badgeClass }}">{{ row.task_status_meta.label }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="mini-item">
+      <div>
+        <div class="cell-title">4. 包裹待取</div>
+        <div class="cell-sub">
+          {% if pkg %}
+            包裹已入柜 / 取件码 {{ pkg.pickup_code }}
+          {% else %}
+            当前还没有生成包裹
+          {% endif %}
+        </div>
+      </div>
+      <div class="cell-stack" style="align-items:flex-end;">
+        <span class="badge {{ row.package_created_meta.badgeClass }}">{{ row.package_created_meta.label }}</span>
+        {% if row.package_status_meta %}
+          <span class="badge {{ row.package_status_meta.badgeClass }}">{{ row.package_status_meta.label }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="mini-item">
+      <div>
+        <div class="cell-title">5. 提醒 / 取件收口</div>
+        <div class="cell-sub">
+          {% if remind_summary %}
+            已记录 {{ remind_summary.total }} 次提醒事件
+          {% else %}
+            当前还没有提醒记录
+          {% endif %}
+        </div>
+      </div>
+      <div class="cell-stack" style="align-items:flex-end;">
+        <span class="badge {{ row.pickup_meta.badgeClass }}">{{ row.pickup_meta.label }}</span>
+        <span class="badge {{ row.attention_meta.badgeClass }}">{{ row.attention_meta.label }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card detail-card" style="margin-top:12px;">
+  <div class="section-heading">
+    <div>
+      <div class="section-title">柜门留痕与图片</div>
+      <div class="section-desc">展示本次入柜或取件的图片留痕和处理状态，便于直接说明证据链。</div>
+    </div>
+  </div>
+  {% if current_box_command or package_deposit_command or package_pickup_command %}
+    {% set media_command = current_box_command or package_deposit_command or package_pickup_command %}
+    <div class="media-evidence">
+      <div class="media-preview">
+        {% set preview_url = media_command.previewImageUrl or media_command.resultImageUrl or media_command.snapshotUrl %}
+        {% if preview_url %}
+          <img class="media-image" src="{{ preview_url }}" alt="{{ media_command.previewImageLabel if media_command.previewImageLabel else '柜门留痕图片' }}" />
+        {% else %}
+          <div class="media-placeholder">
+            <div class="media-placeholder-title">暂无图片</div>
+            <div class="media-placeholder-text">当前已有处理记录，图片会在设备或系统留痕上传后展示。</div>
+          </div>
+        {% endif %}
+      </div>
+      <div class="media-meta">
+        <div class="detail-row"><strong>设备记录：</strong>{% if media_command %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=(current_box.box_no if current_box else (pkg.box_no if pkg else '')), command_id=media_command.commandId) }}">查看设备诊断</a>{% else %}-{% endif %}</div>
+        <div class="detail-row"><strong>留痕场景：</strong>{{ media_command.commandSceneLabel if media_command and media_command.commandSceneLabel else media_command.recordingScene if media_command and media_command.recordingScene else "-" }}</div>
+        <div class="detail-row"><strong>图片类型：</strong>{{ media_command.previewImageLabel if media_command and media_command.previewImageLabel else "-" }}</div>
+        <div class="detail-row"><strong>录像状态：</strong>{{ media_command.recordingStatusLabelLocal if media_command and media_command.recordingStatusLabelLocal else media_command.recordingStatus if media_command and media_command.recordingStatus else "-" }}</div>
+        <div class="detail-row"><strong>系统确认：</strong>{{ "已参与确认" if media_command and media_command.aiParticipates else "仅记录留痕" }}</div>
+        <div class="detail-row"><strong>{{ media_command.snapshotLabel if media_command and media_command.snapshotLabel else "快照" }}状态：</strong>{{ media_command.snapshotStatusLabelLocal if media_command and media_command.snapshotStatusLabelLocal else media_command.snapshotStatus if media_command and media_command.snapshotStatus else "-" }}</div>
+        <div class="detail-row"><strong>{{ media_command.resultImageLabel if media_command and media_command.resultImageLabel else "结果图" }}状态：</strong>{{ media_command.resultImageStatusLabelLocal if media_command and media_command.resultImageStatusLabelLocal else media_command.resultImageStatus if media_command and media_command.resultImageStatus else "-" }}</div>
+        <div class="detail-row"><strong>{{ media_command.videoLabel if media_command and media_command.videoLabel else "视频留痕" }}状态：</strong>{{ media_command.videoStatusLabelLocal if media_command and media_command.videoStatusLabelLocal else media_command.videoStatus if media_command and media_command.videoStatus else "-" }}</div>
+        <div class="detail-row"><strong>录像开始 / 结束：</strong>{{ media_command.recordingStartedAt if media_command and media_command.recordingStartedAt else "-" }} / {{ media_command.recordingStoppedAt if media_command and media_command.recordingStoppedAt else "-" }}</div>
+      </div>
+    </div>
+    {% if package_deposit_command and package_deposit_command.commandId != media_command.commandId %}
+      <div class="detail-row"><strong>入柜留痕记录：</strong><a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=pkg.box_no if pkg else '', command_id=package_deposit_command.commandId) }}">查看设备诊断</a></div>
+    {% endif %}
+    {% if package_pickup_command and package_pickup_command.commandId != media_command.commandId %}
+      <div class="detail-row"><strong>取件留痕记录：</strong><a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=pkg.box_no if pkg else '', command_id=package_pickup_command.commandId) }}">查看设备诊断</a></div>
+    {% endif %}
+  {% else %}
+    <div class="muted">当前链路暂无柜门图片或视频留痕。</div>
+  {% endif %}
+</div>
+
+<div class="card detail-card" style="margin-top:12px;">
+  <div class="section-title">生命周期进度</div>
+  <div class="journey-grid" style="margin-top:12px;">
+    {% for step in row.timeline %}
+      <div class="journey-step {{ step.stateClass }}">
+        <div class="journey-title">{{ step.label }}</div>
+        <div class="journey-hint">{{ step.hint }}</div>
+        <div class="journey-time">{{ step.time|dt_local if step.time else "-" }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="detail-grid" style="margin-top:12px;">
+  <div class="card detail-card">
+    <div class="section-title">订单基本信息</div>
+    <div class="detail-row"><strong>当前状态：</strong><span class="badge {{ status_view.badgeClass }}">{{ status_view.label }}</span></div>
+    <div class="detail-row"><strong>状态说明：</strong>{{ status_view.description }}</div>
+    <div class="detail-row"><strong>订单阶段：</strong>{{ status_view.rawLabel if status_view.rawLabel else status_view.label }}</div>
+    <div class="detail-row"><strong>平台名称：</strong>{{ order.platform_name }}</div>
+    <div class="detail-row"><strong>平台单号：</strong><span class="code">{{ order.external_order_no }}</span></div>
+    <div class="detail-row"><strong>接入方式：</strong>{{ "后台创建" if order.source == "admin_mock" else order.source }}</div>
+    <div class="detail-row"><strong>商家名称：</strong>{{ order.merchant_name if order.merchant_name else "-" }}</div>
+    <div class="detail-row"><strong>商家备注：</strong>{{ order.merchant_note if order.merchant_note else "-" }}</div>
+    <div class="detail-row"><strong>创建时间：</strong>{{ order.created_at|dt_local }}</div>
+    <div class="detail-row"><strong>派单时间：</strong>{{ order.dispatched_at|dt_local if order.dispatched_at else "-" }}</div>
+    <div class="detail-row"><strong>完成时间：</strong>{{ order.completed_at|dt_local if order.completed_at else "-" }}</div>
+    <div class="detail-row"><strong>关闭时间：</strong>{{ order.closed_at|dt_local if order.closed_at else "-" }}</div>
+    <div class="detail-row"><strong>状态备注：</strong>{{ order.status_note if order.status_note else "-" }}</div>
+  </div>
+
+  <div class="card detail-card">
+    <div class="section-title">派单与人工干预</div>
+    <div class="detail-row"><strong>收件人：</strong>{{ order.receiver_name if order.receiver_name else "-" }}</div>
+    <div class="detail-row"><strong>联系电话：</strong>{{ order.receiver_phone }}</div>
+    <div class="detail-row"><strong>配送地址：</strong>{{ order.receiver_address if order.receiver_address else "-" }}</div>
+    <div class="detail-row"><strong>收件账号：</strong>{{ "已匹配" if order.receiver_openid else "未匹配" }}</div>
+    <div class="detail-row"><strong>配送员：</strong>{{ courier_user.username if courier_user and courier_user.username else "-" }}</div>
+    <div class="detail-row"><strong>配送账号：</strong>{{ "已绑定" if order.courier_openid else "未绑定" }}</div>
+
+    {% if row.can_dispatch %}
+      <div class="section-title" style="margin-top:14px;">管理员手动派单</div>
+      <form method="post"
+            action="{{ url_for('admin.admin_dispatch_platform_order', platform_order_id=order.platform_order_id) }}"
+            class="stack-form">
+        <input type="hidden" name="back_to" value="detail" />
+        <input type="hidden" name="back_status" value="all" />
+        <select name="courier_openid" class="input select-input">
+          <option value="">选择已审核通过的配送员</option>
+          {% for c in approved_couriers %}
+            {% set dispatch_user = courier_user_map.get(c.openid) if courier_user_map else None %}
+            <option value="{{ c.openid }}">
+              {{ dispatch_user.username if dispatch_user and dispatch_user.username else '未命名用户' }} / {{ c.phone_number if c.phone_number else '已认证配送员' }}
+            </option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-sm btn-success">确认派单并生成任务</button>
+      </form>
+    {% endif %}
+
+    {% if row.can_cancel or row.can_exception %}
+      <div class="section-title" style="margin-top:14px;">异常与取消收口</div>
+      <form method="post"
+            action="{{ url_for('admin.admin_close_platform_order', platform_order_id=order.platform_order_id) }}"
+            class="stack-form">
+        <input type="hidden" name="back_to" value="detail" />
+        <input type="hidden" name="back_status" value="all" />
+        <textarea name="note" class="input textarea-input" placeholder="填写取消或异常原因（可选）">{{ order.status_note if order.status_note else '' }}</textarea>
+        <div class="form-actions">
+          {% if row.can_cancel %}
+            <button type="submit" class="btn btn-sm btn-outline-primary" name="target_status" value="cancelled">取消订单</button>
+          {% endif %}
+          {% if row.can_exception %}
+            <button type="submit" class="btn btn-sm btn-danger" name="target_status" value="exception">异常关闭</button>
+          {% endif %}
+        </div>
+      </form>
+    {% elif row.close_hint %}
+      <div class="notice notice-info" style="margin-top:14px;">{{ row.close_hint }}</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="detail-grid" style="margin-top:12px;">
+  <div class="card detail-card">
+    <div class="section-title">关联配送任务</div>
+    {% if task %}
+      <div class="detail-row"><strong>任务 ID：</strong><a href="{{ url_for('admin.tasks', platform_order_id=order.platform_order_id) }}">{{ task.task_id }}</a></div>
+      <div class="detail-row"><strong>任务来源：</strong><span class="badge b-blue">平台订单</span></div>
+      <div class="detail-row"><strong>任务状态：</strong><span class="badge {{ row.task_status_meta.badgeClass }}">{{ row.task_status_meta.label }}</span></div>
+      {% if row.task_stage %}
+        <div class="detail-row"><strong>任务阶段：</strong><span class="badge {{ row.task_stage.badgeClass }}">{{ row.task_stage.label }}</span></div>
+        <div class="detail-row"><strong>阶段说明：</strong>{{ row.task_stage.description }}</div>
+      {% endif %}
+      <div class="detail-row"><strong>箱体：</strong>{{ task.box_no }}</div>
+      <div class="detail-row"><strong>收件电话：</strong>{{ task.receiver_phone if task.receiver_phone else "-" }}</div>
+      <div class="detail-row"><strong>商家：</strong>{{ task.merchant_name if task.merchant_name else "-" }}</div>
+      <div class="detail-row"><strong>更新时间：</strong>{{ task.updated_at|dt_local }}</div>
+    {% else %}
+      <div class="muted">当前还没有关联任务。</div>
+    {% endif %}
+  </div>
+
+  <div class="card detail-card">
+    <div class="section-title">关联包裹</div>
+    {% if pkg %}
+      <div class="detail-row"><strong>包裹 ID：</strong><a href="{{ url_for('admin.packages', platform_order_id=order.platform_order_id) }}">{{ pkg.package_id }}</a></div>
+      <div class="detail-row"><strong>包裹状态：</strong><span class="badge {{ row.package_status_meta.badgeClass }}">{{ row.package_status_meta.label }}</span></div>
+      <div class="detail-row"><strong>箱体：</strong>{{ pkg.box_no }}</div>
+      <div class="detail-row"><strong>取件码：</strong><span class="code">{{ pkg.pickup_code }}</span></div>
+      <div class="detail-row"><strong>入柜时间：</strong>{{ package_arrived_at_text }}</div>
+      <div class="detail-row"><strong>取件时间：</strong>{{ package_picked_at_text }}</div>
+    {% else %}
+      <div class="muted">当前还没有生成包裹。</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="detail-grid" style="margin-top:12px;">
+  <div class="card detail-card">
+    <div class="section-title">当前箱体与硬件状态</div>
+    {% if current_box %}
+      <div class="detail-row"><strong>箱体编号：</strong>{{ current_box.box_no }}</div>
+      <div class="detail-row"><strong>业务状态：</strong><span class="badge {{ current_box_status_meta.badgeClass }}">{{ current_box_status_meta.label }}</span></div>
+      <div class="detail-row"><strong>状态说明：</strong>{{ current_box_status_meta.hint }}</div>
+      <div class="detail-row"><strong>锁反馈：</strong>{{ current_box_hardware.lockFeedbackState if current_box_hardware and current_box_hardware.lockFeedbackState else "-" }}</div>
+      <div class="detail-row"><strong>门磁状态：</strong>{{ current_box_hardware.doorState if current_box_hardware and current_box_hardware.doorState else "-" }}</div>
+      <div class="detail-row"><strong>主控供电：</strong>{{ current_box_hardware.controllerPowerState if current_box_hardware and current_box_hardware.controllerPowerState else "-" }}</div>
+      <div class="detail-row"><strong>锁侧供电：</strong>{{ current_box_hardware.lockPowerState if current_box_hardware and current_box_hardware.lockPowerState else "-" }}</div>
+      <div class="detail-row"><strong>硬件告警：</strong>{{ "有告警" if current_box_hardware and current_box_hardware.hasAlert else "正常" }}</div>
+      {% if current_box_command %}
+        <div class="detail-row"><strong>柜门记录：</strong><a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=current_box.box_no, command_id=current_box_command.commandId) }}">查看设备诊断</a></div>
+        <div class="detail-row"><strong>设备状态：</strong><span class="badge {{ current_box_command.statusMeta.badgeClass }}">{{ current_box_command.statusMeta.label }}</span></div>
+        <div class="detail-row"><strong>业务收口：</strong><span class="badge {{ current_box_command.businessMeta.badgeClass }}">{{ current_box_command.businessMeta.label }}</span></div>
+        <div class="detail-row">
+          <strong>当前设备状态：</strong>
+          {% if current_box_command.pendingHardware %}
+            <span class="badge b-blue">等待设备同步</span>
+          {% elif current_box_command.businessStatus == "completed" %}
+            <span class="badge b-green">Completed</span>
+          {% elif current_box_command.businessStatus == "exception" %}
+            <span class="badge b-red">Exception</span>
+          {% else %}
+            <span class="badge b-yellow">In Progress</span>
+          {% endif %}
+        </div>
+        <div class="detail-row"><strong>设备说明：</strong>{{ current_box_command.detail if current_box_command.detail else current_box_command.businessNote if current_box_command.businessNote else current_box_command.lastError if current_box_command.lastError else "-" }}</div>
+      {% endif %}
+    {% else %}
+      <div class="muted">当前还没有进入箱体设备处理环节。</div>
+    {% endif %}
+  </div>
+
+  <div class="card detail-card">
+    <div class="section-title">提醒与取件结果</div>
+    {% if pkg %}
+      <div class="detail-row"><strong>取件状态：</strong><span class="badge {{ row.pickup_meta.badgeClass }}">{{ row.pickup_meta.label }}</span></div>
+      <div class="detail-row"><strong>提醒总数：</strong>{{ remind_summary.total if remind_summary else 0 }}</div>
+      <div class="detail-row"><strong>已发送提醒：</strong>{{ remind_summary.sent if remind_summary else 0 }}</div>
+      <div class="detail-row"><strong>已读提醒：</strong>{{ remind_summary.read if remind_summary else 0 }}</div>
+      <div class="detail-row"><strong>最新提醒时间：</strong>{{ remind_summary.latest.created_at|dt_local if remind_summary and remind_summary.latest else "-" }}</div>
+      <div class="detail-row"><strong>最近发送时间：</strong>{{ remind_summary.latest.sent_at|dt_local if remind_summary and remind_summary.latest and remind_summary.latest.sent_at else "-" }}</div>
+      <div class="detail-row"><strong>最近阅读时间：</strong>{{ remind_summary.latest.read_at|dt_local if remind_summary and remind_summary.latest and remind_summary.latest.read_at else "-" }}</div>
+      <div class="detail-row"><strong>最近提醒内容：</strong>{{ remind_summary.latest.message if remind_summary and remind_summary.latest and remind_summary.latest.message else "-" }}</div>
+    {% else %}
+      <div class="muted">当前还没有进入提醒和取件环节。</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card detail-card" style="margin-top:12px;">
+  <div class="section-title">最近关键日志</div>
+  {% if logs %}
+    <table class="table" style="margin-top:12px;">
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>动作</th>
+          <th>操作方</th>
+          <th>关联对象</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+          <tr>
+            <td>{{ log.createdAtDt|dt_local if log.createdAtDt else log.createdAt }}</td>
+            <td>{{ log.actionLabel }}</td>
+            <td>{{ log.actorLabel }}</td>
+            <td>
+              <div class="cell-sub">订单：<span class="code">{{ log.platformOrderId if log.platformOrderId else "-" }}</span></div>
+              <div class="cell-sub">任务：{{ log.taskId if log.taskId else "-" }}</div>
+              <div class="cell-sub">包裹：{{ log.packageId if log.packageId else "-" }}</div>
+            </td>
+            <td>{{ log.detail if log.detail else "-" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted" style="margin-top:12px;">暂无关键操作记录。</div>
+  {% endif %}
+</div>
+
+<div class="card detail-card" style="margin-top:12px;">
+  <div class="section-title">原始订单载荷</div>
+  {% if raw_payload_pretty %}
+    <pre class="pre-block" style="margin-top:12px;">{{ raw_payload_pretty }}</pre>
+  {% else %}
+    <div class="muted" style="margin-top:12px;">暂无原始 payload。</div>
+  {% endif %}
+</div>
+{% endblock %}

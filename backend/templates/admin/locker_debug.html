@@ -1,0 +1,358 @@
+{% extends "admin/layout.html" %}
+{% set title = "设备诊断" %}
+
+{% block content %}
+<div class="card detail-card" style="margin-bottom:12px;">
+  <div class="section-title">筛选条件</div>
+  <form class="inline-form" method="get" action="{{ url_for('admin.locker_debug') }}">
+    <input class="input" type="text" name="box_no" value="{{ box_no }}" placeholder="箱体编号，例如 A01" />
+    <input class="input" type="text" name="command_id" value="{{ command_id }}" placeholder="命令 ID" />
+    <input class="input" type="number" min="5" max="100" name="limit" value="{{ limit }}" placeholder="数量" />
+    <button class="btn btn-primary" type="submit">应用筛选</button>
+    <a class="btn" href="{{ url_for('admin.locker_debug') }}">重置</a>
+  </form>
+</div>
+
+<div class="card detail-card" style="margin-bottom:12px;">
+  <div class="section-title">当前箱体硬件状态</div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>箱体</th>
+        <th>业务箱体状态</th>
+        <th>当前命令</th>
+        <th>命令业务状态</th>
+        <th>锁反馈</th>
+        <th>门磁</th>
+        <th>供电状态</th>
+        <th>最新告警</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in box_rows %}
+        {% set b = row.box %}
+        {% set hw = row.hardware %}
+        {% set cmd = hw.latestCommand if hw else None %}
+        <tr>
+          <td>
+            <a href="{{ url_for('admin.locker_debug', box_no=b.box_no, limit=limit) }}"><b>{{ b.box_no }}</b></a>
+          </td>
+          <td>
+            <span class="badge {{ 'b-green' if b.status == 'empty' else ('b-yellow' if b.status == 'reserved' else 'b-blue') }}">
+              {{ '空闲' if b.status == 'empty' else ('预占' if b.status == 'reserved' else '占用') }}
+            </span>
+            <div class="muted" style="margin-top:4px;">关联任务：{{ b.task_id if b.task_id else '-' }}</div>
+          </td>
+          <td>
+            {% if cmd %}
+              <div><a class="code" href="{{ url_for('admin.locker_debug', box_no=b.box_no, command_id=cmd.commandId, limit=limit) }}">{{ cmd.commandId }}</a></div>
+              <div style="margin-top:4px;">
+                <span class="badge {{ cmd.statusMeta.badgeClass }}">{{ cmd.statusMeta.label }}</span>
+              </div>
+              <div class="muted" style="margin-top:4px;">{{ cmd.commandSceneLabel if cmd.commandSceneLabel else '-' }}</div>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>
+            {% if cmd %}
+              <div><span class="badge {{ cmd.businessMeta.badgeClass }}">{{ cmd.businessMeta.label }}</span></div>
+              <div class="muted" style="margin-top:4px;">{{ cmd.businessNote if cmd.businessNote else '-' }}</div>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>
+            <div>{{ hw.lockFeedbackStateLabel if hw and hw.lockFeedbackStateLabel else '-' }}</div>
+            <div class="muted" style="margin-top:4px;">
+              {% if hw and hw.latestLockEvent %}
+                {{ hw.latestLockEvent.eventTypeLabel }} @ {{ hw.latestLockEvent.createdAt }}
+              {% else %}
+                -
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            <div>{{ hw.doorStateLabel if hw and hw.doorStateLabel else '-' }}</div>
+            <div class="muted" style="margin-top:4px;">
+              {% if hw and hw.latestDoorEvent %}
+                {{ hw.latestDoorEvent.eventTypeLabel }} @ {{ hw.latestDoorEvent.createdAt }}
+              {% else %}
+                -
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            <div>控制板：{{ hw.controllerPowerStateLabel if hw and hw.controllerPowerStateLabel else '-' }}</div>
+            <div class="muted" style="margin-top:4px;">锁电源：{{ hw.lockPowerStateLabel if hw and hw.lockPowerStateLabel else '-' }}</div>
+          </td>
+          <td>
+            {% if hw and hw.latestAlertEvent %}
+              <div>{{ hw.latestAlertEvent.eventTypeLabel }}</div>
+              <div class="muted" style="margin-top:4px;">{{ hw.latestAlertEvent.detail if hw.latestAlertEvent.detail else '-' }}</div>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="detail-grid" style="margin-bottom:12px;">
+  <div class="card detail-card">
+    <div class="section-title">最近开门命令</div>
+    {% if recent_commands %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>命令</th>
+            <th>箱体</th>
+            <th>硬件状态</th>
+            <th>业务状态</th>
+            <th>操作人</th>
+            <th>更新时间</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cmd in recent_commands %}
+            <tr>
+              <td>
+                <a class="code" href="{{ url_for('admin.locker_debug', box_no=cmd.boxNo, command_id=cmd.commandId, limit=limit) }}">{{ cmd.commandId }}</a>
+                <div class="muted" style="margin-top:4px;">{{ cmd.commandSceneLabel if cmd.commandSceneLabel else '-' }}{% if cmd.reason %} / {{ cmd.reason }}{% endif %}</div>
+              </td>
+              <td>{{ cmd.boxNo }}</td>
+              <td><span class="badge {{ cmd.statusMeta.badgeClass }}">{{ cmd.statusMeta.label }}</span></td>
+              <td>
+                <span class="badge {{ cmd.businessMeta.badgeClass }}">{{ cmd.businessMeta.label }}</span>
+                <div class="muted" style="margin-top:4px;">{{ cmd.businessNote if cmd.businessNote else '-' }}</div>
+              </td>
+              <td>{{ cmd.operatorType if cmd.operatorType else '-' }}{% if cmd.operatorId %} / {{ cmd.operatorId }}{% endif %}</td>
+              <td>{{ cmd.updatedAt if cmd.updatedAt else cmd.createdAt }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="muted">当前还没有开门命令记录。</div>
+    {% endif %}
+  </div>
+
+  <div class="card detail-card">
+    <div class="section-title">当前选中箱体快照</div>
+    {% if selected_box and selected_hardware %}
+      {% set selected_hw_command = selected_hardware.latestCommand if selected_hardware else None %}
+      <div class="detail-row"><b>箱体：</b>{{ selected_box.box_no }}</div>
+      <div class="detail-row"><b>业务箱体状态：</b>{{ '空闲' if selected_box.status == 'empty' else ('预占' if selected_box.status == 'reserved' else '占用') }}</div>
+      <div class="detail-row"><b>关联任务：</b>{{ selected_box.task_id if selected_box.task_id else '-' }}</div>
+      <div class="detail-row"><b>当前命令 ID：</b>{% if selected_hw_command %}<span class="code">{{ selected_hw_command.commandId }}</span>{% else %}-{% endif %}</div>
+      <div class="detail-row"><b>命令硬件状态：</b>{% if selected_hw_command %}{{ selected_hw_command.statusMeta.label }}{% else %}-{% endif %}</div>
+      <div class="detail-row"><b>命令业务状态：</b>{% if selected_hw_command %}{{ selected_hw_command.businessMeta.label }}{% else %}-{% endif %}</div>
+      <div class="detail-row"><b>录制场景：</b>{% if selected_hw_command %}{{ selected_hw_command.commandSceneLabel if selected_hw_command.commandSceneLabel else selected_hw_command.recordingScene if selected_hw_command.recordingScene else '-' }}{% else %}-{% endif %}</div>
+      <div class="detail-row"><b>录制状态：</b>{% if selected_hw_command %}{{ selected_hw_command.recordingStatusLabelLocal }}{% else %}-{% endif %}</div>
+      <div class="detail-row"><b>录制开始 / 结束：</b>{% if selected_hw_command %}{{ selected_hw_command.recordingStartedAt if selected_hw_command.recordingStartedAt else '-' }} / {{ selected_hw_command.recordingStoppedAt if selected_hw_command.recordingStoppedAt else '-' }}{% else %}-{% endif %}</div>
+      <div class="detail-row"><b>参与系统确认：</b>{% if selected_hw_command %}{{ '是' if selected_hw_command.aiParticipates else '否' }}{% else %}-{% endif %}</div>
+      <div class="detail-row"><b>抓拍图 / 结果图：</b>{% if selected_hw_command %}{{ selected_hw_command.snapshotStatusLabelLocal }} / {{ selected_hw_command.resultImageStatusLabelLocal }}{% else %}-{% endif %}</div>
+      <div class="detail-row"><b>视频留痕：</b>{% if selected_hw_command %}{{ selected_hw_command.videoStatusLabelLocal }}{% else %}-{% endif %}</div>
+      <div class="detail-row"><b>硬件档案：</b>{{ selected_hardware.hardwareProfile if selected_hardware.hardwareProfile else '-' }}</div>
+      <div class="detail-row"><b>供电拓扑：</b>{{ selected_hardware.powerTopology if selected_hardware.powerTopology else '-' }}</div>
+      <div class="detail-row"><b>当前门磁状态：</b>{{ selected_hardware.doorStateLabel if selected_hardware.doorStateLabel else '-' }}</div>
+      <div class="detail-row"><b>当前锁反馈：</b>{{ selected_hardware.lockFeedbackStateLabel if selected_hardware.lockFeedbackStateLabel else '-' }}</div>
+      <div class="detail-row"><b>当前业务状态：</b>{{ selected_hardware.businessStatusMeta.label if selected_hardware.businessStatusMeta else '-' }}</div>
+      <div class="detail-row"><b>业务说明：</b>{{ selected_hardware.businessNote if selected_hardware.businessNote else '-' }}</div>
+    {% else %}
+      <div class="muted">请选择箱体或命令，查看当前硬件状态。</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="detail-grid" style="margin-bottom:12px;">
+  <div class="card detail-card">
+    <div class="section-title">最近锁反馈事件</div>
+    {% if recent_lock_events %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>箱体</th>
+            <th>命令</th>
+            <th>事件</th>
+            <th>锁状态</th>
+            <th>说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for event in recent_lock_events %}
+            <tr>
+              <td>{{ event.createdAt }}</td>
+              <td>{{ event.boxNo }}</td>
+              <td>
+                {% if event.commandId %}
+                  <a class="code" href="{{ url_for('admin.locker_debug', box_no=event.boxNo, command_id=event.commandId, limit=limit) }}">{{ event.commandId }}</a>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>{{ event.eventTypeLabel }}</td>
+              <td>{{ event.lockFeedbackStateLabel if event.lockFeedbackStateLabel else '-' }}</td>
+              <td>{{ event.detail if event.detail else '-' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="muted">最近没有锁反馈事件。</div>
+    {% endif %}
+  </div>
+
+  <div class="card detail-card">
+    <div class="section-title">最近门磁事件</div>
+    {% if recent_door_events %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>箱体</th>
+            <th>命令</th>
+            <th>事件</th>
+            <th>门磁状态</th>
+            <th>说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for event in recent_door_events %}
+            <tr>
+              <td>{{ event.createdAt }}</td>
+              <td>{{ event.boxNo }}</td>
+              <td>
+                {% if event.commandId %}
+                  <a class="code" href="{{ url_for('admin.locker_debug', box_no=event.boxNo, command_id=event.commandId, limit=limit) }}">{{ event.commandId }}</a>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>{{ event.eventTypeLabel }}</td>
+              <td>{{ event.doorStateLabel if event.doorStateLabel else '-' }}</td>
+              <td>{{ event.detail if event.detail else '-' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="muted">最近没有门磁事件。</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card detail-card" style="margin-bottom:12px;">
+  <div class="section-title">最近告警事件</div>
+  {% if recent_alert_events %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>箱体</th>
+          <th>命令</th>
+          <th>事件</th>
+          <th>来源</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in recent_alert_events %}
+          <tr>
+            <td>{{ event.createdAt }}</td>
+            <td>{{ event.boxNo }}</td>
+            <td>
+              {% if event.commandId %}
+                <a class="code" href="{{ url_for('admin.locker_debug', box_no=event.boxNo, command_id=event.commandId, limit=limit) }}">{{ event.commandId }}</a>
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td><span class="badge b-red">{{ event.eventTypeLabel }}</span></td>
+            <td>{{ event.sourceLabel }}</td>
+            <td>{{ event.detail if event.detail else '-' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted">最近没有告警事件。</div>
+  {% endif %}
+</div>
+
+<div class="detail-grid">
+  <div class="card detail-card">
+    <div class="section-title">选中命令详情</div>
+    {% if selected_command %}
+      <div class="detail-row"><b>命令 ID：</b><span class="code">{{ selected_command.commandId }}</span></div>
+      <div class="detail-row"><b>箱体：</b>{{ selected_command.boxNo }}</div>
+      <div class="detail-row"><b>命令场景：</b>{{ selected_command.commandSceneLabel if selected_command.commandSceneLabel else '-' }}</div>
+      <div class="detail-row"><b>模式：</b>{{ selected_command.mode }} / {{ selected_command.hardwareProfile if selected_command.hardwareProfile else '-' }}</div>
+      <div class="detail-row"><b>硬件状态：</b>{{ selected_command.statusMeta.label }}</div>
+      <div class="detail-row"><b>业务状态：</b>{{ selected_command.businessMeta.label }}</div>
+      <div class="detail-row"><b>操作人：</b>{{ selected_command.operatorType if selected_command.operatorType else '-' }}{% if selected_command.operatorId %} / {{ selected_command.operatorId }}{% endif %}</div>
+      <div class="detail-row"><b>触发原因：</b>{{ selected_command.reason if selected_command.reason else '-' }}</div>
+      <div class="detail-row"><b>门磁 / 锁反馈：</b>{{ selected_command.doorStateLabel if selected_command.doorStateLabel else '-' }} / {{ selected_command.lockFeedbackStateLabel if selected_command.lockFeedbackStateLabel else '-' }}</div>
+      <div class="detail-row"><b>业务说明：</b>{{ selected_command.businessNote if selected_command.businessNote else '-' }}</div>
+      <div class="detail-row"><b>最近错误：</b>{{ selected_command.lastError if selected_command.lastError else '-' }}</div>
+      <div class="detail-row"><b>录制场景：</b>{{ selected_command.recordingScene if selected_command.recordingScene else '-' }}</div>
+      <div class="detail-row"><b>录制状态：</b>{{ selected_command.recordingStatusLabelLocal }}</div>
+      <div class="detail-row"><b>录制开始：</b>{{ selected_command.recordingStartedAt if selected_command.recordingStartedAt else '-' }}</div>
+      <div class="detail-row"><b>录制结束：</b>{{ selected_command.recordingStoppedAt if selected_command.recordingStoppedAt else '-' }}</div>
+      <div class="detail-row"><b>参与系统确认：</b>{{ '是' if selected_command.aiParticipates else '否' }}</div>
+      <div class="detail-row"><b>归档目录：</b>{% if selected_command.archiveDirectory %}<span class="code">{{ selected_command.archiveDirectory }}</span>{% else %}-{% endif %}</div>
+      <div class="detail-row"><b>{{ selected_command.snapshotLabel if selected_command.snapshotLabel else '抓拍图' }}：</b>{{ selected_command.snapshotStatusLabelLocal }}{% if selected_command.snapshotPath %} / <span class="code">{{ selected_command.snapshotPath }}</span>{% endif %}</div>
+      <div class="detail-row"><b>{{ selected_command.resultImageLabel if selected_command.resultImageLabel else '结果图' }}：</b>{{ selected_command.resultImageStatusLabelLocal }}{% if selected_command.resultImagePath %} / <span class="code">{{ selected_command.resultImagePath }}</span>{% endif %}</div>
+      <div class="detail-row"><b>{{ selected_command.videoLabel if selected_command.videoLabel else '视频留痕' }}：</b>{{ selected_command.videoStatusLabelLocal }}{% if selected_command.videoPath %} / <span class="code">{{ selected_command.videoPath }}</span>{% endif %}</div>
+      <div class="detail-row"><b>更新时间：</b>{{ selected_command.updatedAt if selected_command.updatedAt else '-' }}</div>
+    {% else %}
+      <div class="muted">请从上面的表格选择一个命令查看详情。</div>
+    {% endif %}
+  </div>
+
+  <div class="card detail-card">
+    <div class="section-title">命令载荷</div>
+    {% if selected_command %}
+      <div class="field-label">请求载荷</div>
+      <pre class="pre-block">{{ selected_command_request_pretty if selected_command_request_pretty else "-" }}</pre>
+      <div class="field-label" style="margin-top:12px;">最近一次回调载荷</div>
+      <pre class="pre-block">{{ selected_command_callback_pretty if selected_command_callback_pretty else "-" }}</pre>
+    {% else %}
+      <div class="muted">当前未选择命令。</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if selected_command and selected_command.events %}
+  <div class="card detail-card" style="margin-top:12px;">
+    <div class="section-title">命令事件时间线</div>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>事件</th>
+          <th>来源</th>
+          <th>状态快照</th>
+          <th>门磁 / 锁反馈</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in selected_command.events %}
+          <tr>
+            <td>{{ event.createdAt }}</td>
+            <td>{{ event.eventTypeLabel }}</td>
+            <td>{{ event.sourceLabel }}</td>
+            <td>{{ event.commandStatus if event.commandStatus else '-' }}</td>
+            <td>{{ event.doorStateLabel if event.doorStateLabel else '-' }} / {{ event.lockFeedbackStateLabel if event.lockFeedbackStateLabel else '-' }}</td>
+            <td>{{ event.detail if event.detail else '-' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

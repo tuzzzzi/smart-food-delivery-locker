@@ -1,0 +1,52 @@
+{% extends "admin/layout.html" %}
+{% set title = "用户列表" if not role else ("配送员列表" if role=="courier" else "用户列表") %}
+
+{% block content %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>账号状态</th>
+      <th>昵称</th>
+      <th>手机号</th>
+      <th>角色</th>
+      <th>创建时间</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.user_id }}</td>
+
+      <td>
+        {{ "已绑定" if u.openid else "未绑定" }}
+      </td>
+
+      <td>{{ u.username if u.username else "-" }}</td>
+
+      <td>{{ u.phone_number if u.phone_number else "-" }}</td>
+
+      <td>
+        <span class="badge">{{ u.role }}</span>
+      </td>
+
+      <td>{{ u.created_at|dt_local }}</td>
+
+      <td>
+        {% if u.openid %}
+          <a class="btn btn-sm btn-outline-primary"
+             href="/admin/users/{{ u.openid }}/pickup_profile">
+             取件画像
+          </a>
+        {% else %}
+          -
+        {% endif %}
+      </td>
+
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

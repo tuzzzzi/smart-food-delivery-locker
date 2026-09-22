@@ -1,0 +1,92 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">{{entryRole==='courier' ? '投递结果' : '取件凭证'}}</text>
+    <text class="title">包裹凭证页</text>
+    <text class="sub">{{entryRole==='courier' ? '确认入柜位置和入柜凭证，方便回看本次投递结果。' : '确认包裹状态、柜号和入柜凭证后即可开始取件。'}}</text>
+  </view>
+
+  <view class="search-card" wx:if="{{!directPackageId && entryRole!=='courier'}}">
+    <text class="section-title">通过取件码查找</text>
+    <text class="section-desc">请输入 6 位取件码，系统会展示对应柜号和凭证。</text>
+    <input
+      class="code-input"
+      type="number"
+      maxlength="6"
+      placeholder="输入 6 位取件码"
+      value="{{pickupCode}}"
+      bindinput="onInput"
+    />
+    <button class="btn primary" loading="{{loading}}" disabled="{{loading}}" bindtap="submit">查询包裹</button>
+  </view>
+
+  <view class="credential-card" wx:if="{{pkg}}">
+    <view class="card-head">
+      <view>
+        <text class="section-kicker">包裹状态</text>
+        <text class="merchant">{{pkg.merchantName || '校园外卖包裹'}}</text>
+      </view>
+      <text class="status-chip {{pkg.statusClass}}">{{pkg.statusText}}</text>
+    </view>
+
+    <view class="locker-block">
+      <text class="locker-label">取件柜号</text>
+      <text class="locker-no">{{pkg.boxNo || '-'}}</text>
+    </view>
+
+    <view class="info-grid">
+      <view class="info-item">
+        <text class="info-label">入柜时间</text>
+        <text class="info-value">{{pkg.arrivedAtText || '待同步'}}</text>
+      </view>
+      <view class="info-item">
+        <text class="info-label">当前状态</text>
+        <text class="info-value">{{pkg.statusText}}</text>
+      </view>
+      <view class="info-item" wx:if="{{pkg.pickedAtText}}">
+        <text class="info-label">完成时间</text>
+        <text class="info-value">{{pkg.pickedAtText}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="evidence-card" wx:if="{{depositEvidence}}">
+    <view class="card-head">
+      <view>
+        <text class="section-kicker">入柜凭证</text>
+        <text class="section-title">入柜照片</text>
+      </view>
+      <text class="status-chip {{depositEvidence.aiStatusClass}}">{{depositEvidence.aiStatusText}}</text>
+    </view>
+
+    <image class="proof-image" wx:if="{{depositEvidence.previewImageUrl}}" src="{{depositEvidence.previewImageUrl}}" mode="aspectFill"></image>
+    <view class="image-placeholder" wx:else>
+      <text class="placeholder-title">凭证生成中</text>
+      <text class="placeholder-text">系统完成留痕后，这里会展示本次包裹图片。</text>
+    </view>
+
+    <view class="verify-row">
+      <text class="verify-label">包裹状态</text>
+      <text class="verify-value">{{depositEvidence.evidenceStatusText}}</text>
+    </view>
+    <view class="verify-row" wx:if="{{depositEvidence.confidenceText}}">
+      <text class="verify-label">确认参考</text>
+      <text class="verify-value">{{depositEvidence.confidenceText}}</text>
+    </view>
+  </view>
+
+  <view class="empty-card" wx:if="{{pkg && !depositEvidence}}">
+    <text class="section-title">暂无入柜凭证</text>
+    <text class="section-desc">包裹信息已加载，入柜凭证可能还在生成或暂未返回。</text>
+  </view>
+
+  <view class="hint" wx:if="{{hintText}}">
+    <text>{{hintText}}</text>
+  </view>
+
+  <view class="bottom-actions" wx:if="{{pkg}}">
+    <button class="btn ghost" bindtap="goVerifyInfo" wx:if="{{pkg.verifyToken}}">查看核验信息</button>
+    <button class="btn ghost" bindtap="scanVerifyQr">扫一扫核验</button>
+    <button class="btn primary" bindtap="goGuide" wx:if="{{pkg.status==='pending' && entryRole!=='courier'}}">开始取件</button>
+    <button class="btn ghost" bindtap="goHome" wx:else>{{entryRole==='courier' ? '返回工作台' : '返回首页'}}</button>
+  </view>
+</view>

@@ -1,0 +1,25 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">选择身份</text>
+    <text class="title">你今天要使用哪个入口？</text>
+    <text class="sub">用户用于取件和查看提醒，配送员用于投递和处理任务。</text>
+  </view>
+
+  <view class="role-card user-card" bindtap="enterAsUser">
+    <view>
+      <text class="role-title">我是用户</text>
+      <text class="role-desc">查看待取包裹、入柜凭证和取件提醒。</text>
+    </view>
+    <text class="role-action">进入</text>
+  </view>
+
+  <view class="role-card courier-card" bindtap="enterAsCourier">
+    <view>
+      <text class="role-title">我是配送员</text>
+      <text class="role-desc">查看投递任务、自动分配柜号并完成入柜检测。</text>
+    </view>
+    <text class="role-action">进入</text>
+  </view>
+
+  <button class="switch-btn" bindtap="switchIdentity">切换账号</button>
+</view>

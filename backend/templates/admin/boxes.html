@@ -1,0 +1,234 @@
+{% extends "admin/layout.html" %}
+{% set title = "箱体与柜门状态" %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title-xl">箱体与柜门状态</div>
+    <div class="page-desc">集中展示箱体业务状态、当前关联链路、最新开门记录以及锁反馈、门磁和供电信息，方便运维巡检和现场处理。</div>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.exceptions') }}">查看异常中心</a>
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug') }}">查看设备诊断</a>
+  </div>
+</div>
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="summary-label">空闲箱体</div>
+    <div class="summary-value">{{ box_empty_count }}</div>
+    <div class="summary-note">可直接承接新任务</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">预占箱体</div>
+    <div class="summary-value">{{ box_reserved_count }}</div>
+    <div class="summary-note">已分配任务，等待完成入柜</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">占用箱体</div>
+    <div class="summary-value">{{ box_occupied_count }}</div>
+    <div class="summary-note">已有待取包裹</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">当前告警箱体</div>
+    <div class="summary-value">{{ box_alert_count }}</div>
+    <div class="summary-note">存在超时、离线或顺序异常的箱体</div>
+  </div>
+</div>
+
+<div class="card detail-card" style="margin-top:12px;">
+  <div class="section-title">箱体实时状态</div>
+  {% if box_rows %}
+    <table class="table" style="margin-top:12px;">
+      <thead>
+        <tr>
+          <th>箱体</th>
+          <th>业务状态</th>
+          <th>当前链路</th>
+          <th>硬件状态</th>
+          <th>最近命令</th>
+          <th>最近告警 / 时间</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in box_rows %}
+          {% set b = row.box %}
+          {% set hw = row.hardware %}
+          {% set task = row.task %}
+          {% set pkg = row.package %}
+          {% set order = row.order %}
+          {% set cmd = row.latest_command %}
+          <tr>
+            <td>
+              <div class="cell-title">{{ b.box_no }}</div>
+              <div class="cell-sub">任务占用：{{ b.task_id if b.task_id else "-" }}</div>
+              <div class="cell-sub">更新时间：{{ b.updated_at|dt_local }}</div>
+            </td>
+            <td>
+              <div class="cell-stack">
+                <span class="badge {{ row.status_meta.badgeClass }}">{{ row.status_meta.label }}</span>
+                {% if hw and hw.businessStatus %}
+                  {% if cmd and cmd.businessMeta %}
+                    <span class="badge {{ cmd.businessMeta.badgeClass }}">{{ cmd.businessMeta.label }}</span>
+                  {% endif %}
+                {% endif %}
+              </div>
+              <div class="cell-sub" style="margin-top:6px;">{{ row.status_meta.hint }}</div>
+            </td>
+            <td>
+              {% if order %}
+                <div class="cell-title"><a href="{{ url_for('admin.platform_order_detail', platform_order_id=order.platform_order_id) }}">{{ order.platform_order_id }}</a></div>
+                <div class="cell-sub">订单：{{ order.platform_name }} / {{ order.external_order_no }}</div>
+              {% else %}
+                <div class="cell-sub">当前无关联平台订单</div>
+              {% endif %}
+              {% if task %}
+                <div class="cell-sub">
+                  配送任务：
+                  {% if task.platform_order_id %}
+                    <a href="{{ url_for('admin.tasks', platform_order_id=task.platform_order_id) }}">{{ task.task_id }}</a>
+                  {% else %}
+                    <a href="{{ url_for('admin.tasks') }}">{{ task.task_id }}</a>
+                  {% endif %}
+                </div>
+                {% if row.task_stage %}
+                  <div class="cell-sub"><span class="badge {{ row.task_stage.badgeClass }}">{{ row.task_stage.label }}</span></div>
+                {% endif %}
+              {% endif %}
+              {% if pkg %}
+                <div class="cell-sub">
+                  包裹记录：
+                  {% if task %}
+                    <a href="{{ url_for('admin.packages', task_id=task.task_id) }}">{{ pkg.package_id }}</a>
+                  {% else %}
+                    <a href="{{ url_for('admin.packages') }}">{{ pkg.package_id }}</a>
+                  {% endif %}
+                </div>
+                {% if row.package_status_meta %}
+                  <div class="cell-sub"><span class="badge {{ row.package_status_meta.badgeClass }}">{{ row.package_status_meta.label }}</span></div>
+                {% endif %}
+              {% endif %}
+              {% if cmd %}
+                <div class="cell-sub">
+                  设备记录：
+                  <a href="{{ url_for('admin.locker_debug', command_id=cmd.commandId, box_no=b.box_no) }}"><span class="code">{{ cmd.commandId }}</span></a>
+                </div>
+              {% endif %}
+            </td>
+            <td>
+              <div class="cell-sub">锁反馈：{{ hw.lockFeedbackStateLabel if hw and hw.lockFeedbackStateLabel else "-" }}</div>
+              <div class="cell-sub">门磁：{{ hw.doorStateLabel if hw and hw.doorStateLabel else "-" }}</div>
+              <div class="cell-sub">主控供电：{{ hw.controllerPowerStateLabel if hw and hw.controllerPowerStateLabel else "-" }}</div>
+              <div class="cell-sub">锁侧供电：{{ hw.lockPowerStateLabel if hw and hw.lockPowerStateLabel else "-" }}</div>
+              <div class="cell-sub">硬件告警：{{ "有告警" if hw and hw.hasAlert else "正常" }}</div>
+            </td>
+            <td>
+              {% if cmd %}
+                <div class="cell-title">设备记录：<a href="{{ url_for('admin.locker_debug', command_id=cmd.commandId, box_no=b.box_no) }}"><span class="code">{{ cmd.commandId }}</span></a></div>
+                <div class="cell-stack" style="margin-top:6px;">
+                  <span class="badge {{ cmd.statusMeta.badgeClass }}">{{ cmd.statusMeta.label }}</span>
+                  {% if cmd.businessMeta %}
+                    <span class="badge {{ cmd.businessMeta.badgeClass }}">{{ cmd.businessMeta.label }}</span>
+                  {% endif %}
+                  {% if cmd.pendingHardware %}
+                    <span class="badge b-blue">等待设备反馈</span>
+                  {% endif %}
+                </div>
+                <div class="cell-sub">{{ cmd.detail if cmd.detail else cmd.lastError if cmd.lastError else cmd.businessNote if cmd.businessNote else "-" }}</div>
+              {% else %}
+                <div class="muted">暂无开门命令</div>
+              {% endif %}
+            </td>
+            <td>
+              {% if row.latest_alert %}
+                <div class="cell-title">{{ row.latest_alert.eventType }}</div>
+                <div class="cell-sub">{{ row.latest_alert.detail if row.latest_alert.detail else "已记录箱体告警" }}</div>
+                <div class="cell-sub">{{ row.latest_alert.createdAt if row.latest_alert.createdAt else "-" }}</div>
+              {% else %}
+                <div class="cell-sub">无新告警</div>
+              {% endif %}
+            </td>
+            <td>
+              <div class="table-actions">
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=b.box_no) }}">设备诊断</a>
+                {% if order %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_order_detail', platform_order_id=order.platform_order_id) }}">查看订单</a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted" style="margin-top:12px;">当前没有箱体数据。</div>
+  {% endif %}
+</div>
+
+<div class="section-grid-2" style="margin-top:12px;">
+  <div class="card detail-card">
+    <div class="section-title">最近柜门命令</div>
+    {% if recent_commands %}
+      <table class="table" style="margin-top:12px;">
+        <thead>
+          <tr>
+            <th>命令号</th>
+            <th>箱体</th>
+            <th>触发方</th>
+            <th>命令状态</th>
+            <th>业务收口</th>
+            <th>锁反馈 / 门磁</th>
+            <th>说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cmd in recent_commands %}
+            <tr>
+              <td><a href="{{ url_for('admin.locker_debug', command_id=cmd.commandId, box_no=cmd.boxNo) }}"><span class="code">{{ cmd.commandId }}</span></a></td>
+              <td>{{ cmd.boxNo }}</td>
+              <td>{{ cmd.operatorType }}{% if cmd.operatorId %} / {{ cmd.operatorId }}{% endif %}</td>
+              <td><span class="badge {{ cmd.statusMeta.badgeClass }}">{{ cmd.statusMeta.label }}</span></td>
+              <td><span class="badge {{ cmd.businessMeta.badgeClass }}">{{ cmd.businessMeta.label }}</span></td>
+              <td>
+                <div class="cell-sub">锁：{{ cmd.lockFeedbackState if cmd.lockFeedbackState else "-" }}</div>
+                <div class="cell-sub">门：{{ cmd.doorState if cmd.doorState else "-" }}</div>
+              </td>
+              <td>{{ cmd.detail if cmd.detail else cmd.lastError if cmd.lastError else cmd.businessNote if cmd.businessNote else "-" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="muted" style="margin-top:12px;">当前还没有柜门命令记录。</div>
+    {% endif %}
+  </div>
+
+  <div class="card detail-card">
+    <div class="section-title">最近硬件告警事件</div>
+    {% if recent_alert_events %}
+      <div class="mini-list" style="margin-top:12px;">
+        {% for event in recent_alert_events %}
+          <div class="mini-item">
+            <div>
+              <div class="cell-title">箱体 {{ event.boxNo }} / {{ event.eventType }}</div>
+              <div class="cell-sub">{{ event.detail if event.detail else "已记录硬件异常事件" }}</div>
+              <div class="cell-sub">来源：{{ event.source }}</div>
+            </div>
+            <div class="cell-stack" style="align-items:flex-end;">
+              <span class="badge b-red">{{ event.commandStatus if event.commandStatus else "告警" }}</span>
+              {% if event.commandId %}
+                <a href="{{ url_for('admin.locker_debug', box_no=event.boxNo, command_id=event.commandId) }}">查看详情</a>
+              {% else %}
+                <a href="{{ url_for('admin.locker_debug', box_no=event.boxNo) }}">查看详情</a>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="muted" style="margin-top:12px;">最近没有新的硬件告警事件。</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

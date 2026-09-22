@@ -1,0 +1,73 @@
+{% extends "admin/layout.html" %}
+{% set title = "新建平台订单" %}
+
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap;">
+  <div>
+    <div style="font-size:18px;font-weight:800;">新建平台订单</div>
+    <div class="muted" style="margin-top:4px;">用于补录或演示平台订单，创建后会进入正常派单流程。</div>
+  </div>
+  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_orders') }}">返回平台订单</a>
+</div>
+
+{% if notice %}
+  <div class="notice {{ 'notice-error' if notice_type == 'error' else ('notice-info' if notice_type == 'info' else 'notice-success') }}">
+    {{ notice }}
+    {% if notice_reason_code %}
+      <div class="muted" style="margin-top:4px;">原因码：{{ notice_reason_code }}</div>
+    {% endif %}
+  </div>
+{% endif %}
+
+<div class="card form-card">
+  <form method="post" action="{{ url_for('admin.create_platform_order') }}" class="stack-form">
+    <div class="form-grid">
+      <div>
+        <div class="field-label">平台名称</div>
+        <input class="input" name="platform_name" value="{{ form_data.platform_name }}" placeholder="例如：美团 / 饿了么 / 校园平台" />
+      </div>
+
+      <div>
+        <div class="field-label">平台订单号</div>
+        <input class="input" name="external_order_no" value="{{ form_data.external_order_no }}" placeholder="可留空，系统自动生成" />
+      </div>
+
+      <div>
+        <div class="field-label">商家名称</div>
+        <input class="input" name="merchant_name" value="{{ form_data.merchant_name }}" placeholder="例如：一食堂炒饭窗口" />
+      </div>
+
+      <div>
+        <div class="field-label">收件人姓名</div>
+        <input class="input" name="receiver_name" value="{{ form_data.receiver_name }}" placeholder="例如：张三" />
+      </div>
+
+      <div>
+        <div class="field-label">收件人手机号</div>
+        <input class="input" name="receiver_phone" value="{{ form_data.receiver_phone }}" placeholder="例如：13800000001" />
+      </div>
+    </div>
+
+    <div class="muted" style="margin-top:4px;">
+      系统会在创建订单时按手机号匹配已绑定用户；如果当前手机号尚未绑定用户，订单会先进入“待匹配用户”状态，暂不可派单。
+    </div>
+
+    <div>
+      <div class="field-label">配送地址</div>
+      <textarea class="input textarea-input" name="receiver_address" placeholder="例如：A区宿舍楼 3 号柜体">{{ form_data.receiver_address }}</textarea>
+    </div>
+
+    <div>
+      <div class="field-label">备注</div>
+      <textarea class="input textarea-input" name="merchant_note" placeholder="例如：少辣、请尽快送达、演示单">{{ form_data.merchant_note }}</textarea>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-sm btn-success">创建平台订单</button>
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_orders') }}">取消</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

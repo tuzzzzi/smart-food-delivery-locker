@@ -1,0 +1,147 @@
+.page {
+  min-height: 100vh;
+  padding: 72px 16px 28px;
+  box-sizing: border-box;
+  background: #f4f7fb;
+}
+
+.login-card {
+  padding: 24px 20px;
+  border: 1px solid #e4ebf5;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.title {
+  display: block;
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 900;
+  color: #111827;
+}
+
+.sub {
+  display: block;
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #64748b;
+}
+
+.btn {
+  margin-top: 18px;
+  min-height: 50px;
+  line-height: 50px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.primary {
+  color: #ffffff;
+  background: #2563eb;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+}
+
+.login-tip {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #64748b;
+  text-align: center;
+}
+
+.experience {
+  margin-top: 18px;
+  border: 1px solid #edf2f7;
+  border-radius: 18px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.experience-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  background: #f8fafc;
+}
+
+.experience-title {
+  font-size: 12px;
+  font-weight: 900;
+  color: #334155;
+}
+
+.experience-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.arrow {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.experience-list {
+  padding: 4px 12px 14px;
+}
+
+.experience-group {
+  padding-top: 12px;
+}
+
+.group-title {
+  display: block;
+  padding: 0 2px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.loading-text {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.experience-btn {
+  margin-top: 8px;
+  min-height: 44px;
+  line-height: 44px;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #dbe7f5;
+  box-shadow: none;
+}
+
+.loading-text {
+  margin-top: 14px;
+  text-align: center;
+}
+
+.hint {
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #b91c1c;
+  text-align: center;
+}

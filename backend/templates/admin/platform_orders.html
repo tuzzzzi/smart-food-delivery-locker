@@ -1,0 +1,228 @@
+{% extends "admin/layout.html" %}
+{% set title = "平台订单" %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title-xl">平台订单总览</div>
+    <div class="page-desc">把平台订单、派单进度、包裹记录、取件结果和人工干预入口放在一个页面里，方便快速判断当前状态和下一步动作。</div>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.exceptions') }}">查看异常中心</a>
+    <a class="btn btn-sm btn-success" href="{{ url_for('admin.new_platform_order') }}">新建平台订单</a>
+  </div>
+</div>
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="summary-label">当前筛选结果</div>
+    <div class="summary-value">{{ order_stats.filtered }}</div>
+    <div class="summary-note">按当前状态筛选后的订单数量</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">全部平台订单</div>
+    <div class="summary-value">{{ order_stats.all }}</div>
+    <div class="summary-note">用于展示系统整体接单规模</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">待派单</div>
+    <div class="summary-value">{{ order_stats.pending_dispatch }}</div>
+    <div class="summary-note">等待管理员派单</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">入柜确认中</div>
+    <div class="summary-value">{{ order_stats.waiting_ai }}</div>
+    <div class="summary-note">配送员已入柜，等待系统判定或人工处理</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">待取件</div>
+    <div class="summary-value">{{ order_stats.ready_for_pickup }}</div>
+    <div class="summary-note">包裹记录已生成，等待用户取件</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">已完成</div>
+    <div class="summary-value">{{ order_stats.completed }}</div>
+    <div class="summary-note">已完成从接单到取件的闭环</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">已派单</div>
+    <div class="summary-value">{{ order_stats.dispatched }}</div>
+    <div class="summary-note">任务已创建并进入配送执行阶段</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">异常 / 取消</div>
+    <div class="summary-value">{{ order_stats.closed }}</div>
+    <div class="summary-note">订单已通过人工流程收口</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:12px;">
+  <div class="page-actions">
+    <strong>状态筛选：</strong>
+    <a class="btn btn-sm {{ 'btn-primary' if current_status == 'all' else 'btn-outline-primary' }}" href="{{ url_for('admin.platform_orders', status='all') }}">全部</a>
+    <a class="btn btn-sm {{ 'btn-primary' if current_status == 'pending_dispatch' else 'btn-outline-primary' }}" href="{{ url_for('admin.platform_orders', status='pending_dispatch') }}">待派单</a>
+    <a class="btn btn-sm {{ 'btn-primary' if current_status == 'dispatched' else 'btn-outline-primary' }}" href="{{ url_for('admin.platform_orders', status='dispatched') }}">已派单</a>
+    <a class="btn btn-sm {{ 'btn-primary' if current_status == 'waiting_ai' else 'btn-outline-primary' }}" href="{{ url_for('admin.platform_orders', status='waiting_ai') }}">待确认</a>
+    <a class="btn btn-sm {{ 'btn-primary' if current_status == 'ready_for_pickup' else 'btn-outline-primary' }}" href="{{ url_for('admin.platform_orders', status='ready_for_pickup') }}">待取件</a>
+    <a class="btn btn-sm {{ 'btn-primary' if current_status == 'completed' else 'btn-outline-primary' }}" href="{{ url_for('admin.platform_orders', status='completed') }}">已完成</a>
+    <a class="btn btn-sm {{ 'btn-primary' if current_status == 'cancelled' else 'btn-outline-primary' }}" href="{{ url_for('admin.platform_orders', status='cancelled') }}">已取消</a>
+    <a class="btn btn-sm {{ 'btn-primary' if current_status == 'exception' else 'btn-outline-primary' }}" href="{{ url_for('admin.platform_orders', status='exception') }}">异常关闭</a>
+  </div>
+</div>
+
+{% if notice %}
+  <div class="notice {{ 'notice-error' if notice_type == 'error' else ('notice-info' if notice_type == 'info' else 'notice-success') }}">
+    {{ notice }}
+  </div>
+{% endif %}
+
+<div class="card" style="margin-top:12px;">
+  {% if order_rows %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>订单信息</th>
+          <th>收件信息</th>
+          <th>当前状态</th>
+          <th>派单情况</th>
+          <th>配送 / 包裹链路</th>
+          <th>当前箱体 / 时间</th>
+          <th style="width: 360px;">快捷操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in order_rows %}
+          {% set order = row.order %}
+          {% set task = row.task %}
+          {% set pkg = row.package %}
+          {% set courier_user = courier_user_map.get(order.courier_openid) if courier_user_map and order.courier_openid else None %}
+          <tr>
+            <td>
+              <div class="cell-title">{{ order.platform_order_id }}</div>
+              <div class="cell-sub">{{ order.platform_name }} / {{ order.external_order_no }}</div>
+              <div class="cell-sub">接入方式：{{ "后台创建" if order.source == "admin_mock" else order.source }}</div>
+              <div class="cell-sub">商家：{{ order.merchant_name if order.merchant_name else "-" }}</div>
+              {% if order.merchant_note %}
+                <div class="cell-sub">备注：{{ order.merchant_note }}</div>
+              {% endif %}
+            </td>
+            <td>
+              <div class="cell-title">{{ order.receiver_name if order.receiver_name else "-" }}</div>
+              <div class="cell-sub">{{ order.receiver_phone }}</div>
+              <div class="cell-sub">{{ order.receiver_address if order.receiver_address else "-" }}</div>
+              <div class="cell-sub">收件账号：{{ "已匹配" if order.receiver_openid else "未匹配" }}</div>
+            </td>
+            <td>
+              <div class="cell-stack">
+                <span class="badge {{ row.status_view.badgeClass }}">{{ row.status_view.label }}</span>
+                <span class="badge {{ row.attention_meta.badgeClass }}">{{ row.attention_meta.label }}</span>
+              </div>
+              <div class="cell-sub" style="margin-top:6px;">{{ row.status_view.description }}</div>
+              <div class="cell-sub">订单阶段：{{ row.status_view.rawLabel }}</div>
+              {% if order.status_note %}
+                <div class="cell-sub">说明：{{ order.status_note }}</div>
+              {% endif %}
+            </td>
+            <td>
+              <div class="cell-stack">
+                <span class="badge {{ row.dispatch_meta.badgeClass }}">{{ row.dispatch_meta.label }}</span>
+                {% if courier_user or order.courier_openid %}
+                  <div class="cell-sub">配送员：{{ courier_user.username if courier_user and courier_user.username else "-" }}</div>
+                  <div class="cell-sub">配送账号：已绑定</div>
+                {% else %}
+                  <div class="cell-sub">{{ row.dispatch_meta.hint }}</div>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <div class="cell-stack">
+                <span class="badge {{ row.task_created_meta.badgeClass }}">{{ row.task_created_meta.label }}</span>
+                {% if task %}
+                  <div class="cell-sub">配送任务：<a href="{{ url_for('admin.tasks', platform_order_id=order.platform_order_id) }}">{{ task.task_id }}</a></div>
+                  <span class="badge {{ row.task_status_meta.badgeClass }}">{{ row.task_status_meta.label }}</span>
+                {% else %}
+                  <div class="cell-sub">{{ row.task_created_meta.hint }}</div>
+                {% endif %}
+
+                <span class="badge {{ row.package_created_meta.badgeClass }}">{{ row.package_created_meta.label }}</span>
+                {% if pkg %}
+                  <div class="cell-sub">包裹记录：<a href="{{ url_for('admin.packages', platform_order_id=order.platform_order_id) }}">{{ pkg.package_id }}</a></div>
+                  <span class="badge {{ row.package_status_meta.badgeClass }}">{{ row.package_status_meta.label }}</span>
+                {% else %}
+                  <div class="cell-sub">{{ row.package_created_meta.hint }}</div>
+                {% endif %}
+
+                <span class="badge {{ row.pickup_meta.badgeClass }}">{{ row.pickup_meta.label }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="cell-title">{{ ('箱体 ' ~ row.current_box_no) if row.current_box_no else "尚未分配箱体" }}</div>
+              <div class="cell-sub">创建：{{ order.created_at|dt_local }}</div>
+              <div class="cell-sub">派单：{{ order.dispatched_at|dt_local if order.dispatched_at else "-" }}</div>
+              <div class="cell-sub">完成：{{ order.completed_at|dt_local if order.completed_at else "-" }}</div>
+              <div class="cell-sub">关闭：{{ order.closed_at|dt_local if order.closed_at else "-" }}</div>
+            </td>
+            <td>
+              <div class="table-actions">
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_order_detail', platform_order_id=order.platform_order_id) }}">查看详情</a>
+                {% if task %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.tasks', platform_order_id=order.platform_order_id) }}">查看任务</a>
+                {% endif %}
+                {% if task or pkg %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.packages', platform_order_id=order.platform_order_id) }}">查看包裹</a>
+                {% endif %}
+                {% if row.current_box_no %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=row.current_box_no) }}">查看设备诊断</a>
+                {% endif %}
+              </div>
+
+              {% if row.can_dispatch %}
+                <form method="post"
+                      action="{{ url_for('admin.admin_dispatch_platform_order', platform_order_id=order.platform_order_id) }}"
+                      class="inline-form"
+                      style="margin-top:8px;">
+                  <input type="hidden" name="back_to" value="list" />
+                  <input type="hidden" name="back_status" value="{{ current_status }}" />
+                  <select name="courier_openid" class="input select-input">
+                    <option value="">选择已审核配送员</option>
+                    {% for c in approved_couriers %}
+                      {% set dispatch_user = courier_user_map.get(c.openid) if courier_user_map else None %}
+                      <option value="{{ c.openid }}">
+                        {{ dispatch_user.username if dispatch_user and dispatch_user.username else '未命名用户' }} / {{ c.phone_number if c.phone_number else '已认证配送员' }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn btn-sm btn-success">派单</button>
+                </form>
+              {% endif %}
+
+              {% if row.can_cancel or row.can_exception %}
+                <div class="table-actions" style="margin-top:8px;">
+                  {% if row.can_cancel %}
+                    <form method="post" action="{{ url_for('admin.admin_close_platform_order', platform_order_id=order.platform_order_id) }}">
+                      <input type="hidden" name="back_to" value="list" />
+                      <input type="hidden" name="back_status" value="{{ current_status }}" />
+                      <button type="submit" class="btn btn-sm btn-outline-primary" name="target_status" value="cancelled">取消</button>
+                    </form>
+                  {% endif %}
+                  {% if row.can_exception %}
+                    <form method="post" action="{{ url_for('admin.admin_close_platform_order', platform_order_id=order.platform_order_id) }}">
+                      <input type="hidden" name="back_to" value="list" />
+                      <input type="hidden" name="back_status" value="{{ current_status }}" />
+                      <button type="submit" class="btn btn-sm btn-danger" name="target_status" value="exception">异常关闭</button>
+                    </form>
+                  {% endif %}
+                </div>
+              {% elif row.close_hint %}
+                <div class="cell-sub" style="margin-top:8px;">{{ row.close_hint }}</div>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted">当前筛选条件下没有平台订单。</div>
+  {% endif %}
+</div>
+{% endblock %}

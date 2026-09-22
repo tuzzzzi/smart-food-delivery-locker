@@ -1,0 +1,146 @@
+{% extends "admin/layout.html" %}
+{% set title = "取件画像 & 提醒策略" %}
+
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap;">
+  <div>
+    <div style="font-size:18px;font-weight:800;">取件画像 & 提醒策略</div>
+    <div style="color:#666;font-size:12px;margin-top:4px;">
+      用户账号：已绑定
+    </div>
+  </div>
+  <a class="btn btn-sm btn-outline-primary" href="/admin/users">返回用户列表</a>
+</div>
+
+<!-- 用户信息卡 -->
+<div class="card" style="padding:12px;margin-bottom:12px;">
+  <div style="display:flex;gap:18px;flex-wrap:wrap;">
+    <div><strong>用户ID：</strong>{{ u.user_id if u else "-" }}</div>
+    <div><strong>昵称：</strong>{{ u.username if u and u.username else "-" }}</div>
+    <div><strong>手机号：</strong>{{ u.phone_number if u and u.phone_number else "-" }}</div>
+    <div><strong>待取数量：</strong>{{ pending_cnt }}</div>
+    <div><strong>策略模式：</strong><span class="badge">{{ policy.mode }}</span></div>
+  </div>
+</div>
+
+<!-- 最近5次 -->
+<div class="card" style="padding:12px;margin-bottom:12px;">
+  <div style="font-weight:800;margin-bottom:8px;">最近 5 次取件耗时</div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>时间</th>
+        <th>包裹ID</th>
+        <th>耗时(分钟)</th>
+        <th>耗时(秒)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for h in hist %}
+      <tr>
+        <td>{{ h.created_at|dt_local }}</td>
+        <td style="font-family:monospace;">{{ h.package_id if h.package_id else "-" }}</td>
+        <td>
+          {% if h.duration_sec is not none %}
+            {{ (h.duration_sec/60)|round(1) }}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td>{{ h.duration_sec if h.duration_sec is not none else "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if hist|length == 0 %}
+    <div style="color:#888;">暂无取件历史（需要用户完成取件后才会记录）</div>
+  {% endif %}
+</div>
+
+<!-- 策略配置（先做最小：能改 mode / fixed_count / offsets_json） -->
+<div class="card" style="padding:12px;margin-bottom:12px;">
+  <div style="font-weight:800;margin-bottom:8px;">提醒策略配置</div>
+
+  <form method="post" action="/admin/users/{{openid}}/pickup_profile/save_policy" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+    <div>
+      <div style="font-size:12px;color:#666;margin-bottom:6px;">模式</div>
+      <select name="mode" class="form-control form-control-sm" style="width:160px;">
+        <option value="auto" {{'selected' if policy.mode=='auto' else ''}}>auto（智能）</option>
+        <option value="fixed" {{'selected' if policy.mode=='fixed' else ''}}>fixed（固定次数）</option>
+        <option value="custom" {{'selected' if policy.mode=='custom' else ''}}>custom（自定义时间点）</option>
+      </select>
+    </div>
+
+    <div>
+      <div style="font-size:12px;color:#666;margin-bottom:6px;">固定次数(1~5)</div>
+      <input name="fixed_count" value="{{ policy.fixed_count if policy.fixed_count else '' }}"
+             class="form-control form-control-sm" style="width:140px;" placeholder="例如 3" />
+    </div>
+
+    <div style="flex:1;min-width:220px;">
+      <div style="font-size:12px;color:#666;margin-bottom:6px;">自定义 offsets_json</div>
+      <input name="offsets_json" value="{{ policy.offsets_json if policy.offsets_json else '' }}"
+             class="form-control form-control-sm"
+             placeholder='例如 [0,30,60]' />
+    </div>
+
+    <div>
+      <button type="submit" class="btn btn-sm btn-primary">保存策略</button>
+    </div>
+  </form>
+
+  <div style="margin-top:10px;color:#666;font-size:12px;line-height:1.7;">
+    <div>• auto：系统按“最近5次取件耗时中位数”自动决定提醒次数。</div>
+    <div>• fixed：按固定次数提醒（建议配合默认间隔 30min）。</div>
+    <div>• custom：直接使用 offsets_json，例如 <code>[0,30,60]</code>。</div>
+  </div>
+</div>
+
+<!-- 手动提醒 + 最近提醒记录 -->
+<div class="card" style="padding:12px;">
+  <div style="font-weight:800;margin-bottom:8px;">管理员手动提醒</div>
+
+  <form method="post" action="/admin/users/{{openid}}/pickup_profile/manual_remind" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+    <div style="flex:1;min-width:240px;">
+      <div style="font-size:12px;color:#666;margin-bottom:6px;">提醒内容</div>
+      <input name="message" class="form-control form-control-sm"
+             placeholder="管理员提醒：请及时取餐" />
+    </div>
+    <div>
+      <button type="submit" class="btn btn-sm btn-success">发送提醒</button>
+    </div>
+  </form>
+
+  <div style="font-weight:700;margin-top:12px;margin-bottom:6px;">最近 10 条提醒记录</div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>来源</th>
+        <th>内容</th>
+        <th>due_at</th>
+        <th>sent_at</th>
+        <th>read_at</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in evs %}
+      <tr>
+        <td>{{ e.id }}</td>
+        <td><span class="badge">{{ e.source }}</span></td>
+        <td style="max-width:420px;word-break:break-all;">{{ e.message }}</td>
+        <td>{{ e.due_at|dt_local }}</td>
+        <td>{{ e.sent_at|dt_local if e.sent_at else "-" }}</td>
+        <td>{{ e.read_at|dt_local if e.read_at else "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if evs|length == 0 %}
+    <div style="color:#888;">暂无提醒记录</div>
+  {% endif %}
+</div>
+
+{% endblock %}

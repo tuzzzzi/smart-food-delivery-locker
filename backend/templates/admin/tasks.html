@@ -1,0 +1,143 @@
+{% extends "admin/layout.html" %}
+{% set title = "任务列表" %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title-xl">任务列表</div>
+    <div class="page-desc">用于展示任务来源、执行阶段、关联平台订单与包裹，便于从执行视角讲解订单派发后的后续链路。</div>
+  </div>
+  <div class="page-actions">
+    {% if selected_order %}
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_order_detail', platform_order_id=selected_order.platform_order_id) }}">查看平台订单</a>
+    {% endif %}
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.packages') }}">查看包裹页</a>
+  </div>
+</div>
+
+{% if platform_order_id %}
+  <div class="notice notice-info" style="margin-bottom:12px;">
+    当前仅展示平台订单 <span class="code">{{ platform_order_id }}</span> 的关联任务，方便从单个订单继续追踪执行过程。
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.tasks') }}">查看全部任务</a>
+  </div>
+{% endif %}
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="summary-label">任务总数</div>
+    <div class="summary-value">{{ task_stats.total }}</div>
+    <div class="summary-note">当前筛选范围内的任务数量</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">待开始</div>
+    <div class="summary-value">{{ task_stats.pending }}</div>
+    <div class="summary-note">等待配送员投递或等待重新投递</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">执行中</div>
+    <div class="summary-value">{{ task_stats.in_progress }}</div>
+    <div class="summary-note">当前正在入柜、待确认或人工处理中</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">已完成入柜</div>
+    <div class="summary-value">{{ task_stats.completed }}</div>
+    <div class="summary-note">系统已确认，任务已完成入柜环节</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">已关闭</div>
+    <div class="summary-value">{{ task_stats.closed }}</div>
+    <div class="summary-note">任务已被取消或回退关闭</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:12px;">
+  {% if task_rows %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>任务</th>
+          <th>来源</th>
+          <th>关联平台订单</th>
+          <th>当前阶段</th>
+          <th>关联包裹 / 箱体</th>
+          <th>关键时间</th>
+          <th>说明</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in task_rows %}
+          {% set t = row.task %}
+          {% set order = row.order %}
+          {% set pkg = row.package %}
+          <tr>
+            <td>
+              <div class="cell-title">{{ t.task_id }}</div>
+              <div class="cell-sub">当前状态：{{ row.task_status_meta.label }}</div>
+              <div class="cell-sub">更新时间：{{ t.updated_at|dt_local }}</div>
+            </td>
+            <td>
+              <span class="badge {{ row.source_meta.badgeClass }}">{{ row.source_meta.label }}</span>
+              <div class="cell-sub" style="margin-top:6px;">{{ row.source_meta.hint }}</div>
+            </td>
+            <td>
+              {% if order %}
+                <div class="cell-title"><a href="{{ url_for('admin.platform_order_detail', platform_order_id=order.platform_order_id) }}">{{ order.platform_order_id }}</a></div>
+                <div class="cell-sub">{{ order.platform_name }} / {{ order.external_order_no }}</div>
+                <div class="cell-sub">
+                  <span class="badge {{ row.order_status_view.badgeClass }}">{{ row.order_status_view.label }}</span>
+                </div>
+              {% else %}
+                <div class="muted">无关联平台订单</div>
+              {% endif %}
+            </td>
+            <td>
+              {% if row.task_stage %}
+                <div class="cell-stack">
+                  <span class="badge {{ row.task_stage.badgeClass }}">{{ row.task_stage.label }}</span>
+                  <span class="badge {{ row.task_status_meta.badgeClass }}">{{ row.task_status_meta.label }}</span>
+                </div>
+                <div class="cell-sub" style="margin-top:6px;">{{ row.task_stage.description }}</div>
+              {% else %}
+                <span class="badge {{ row.task_status_meta.badgeClass }}">{{ row.task_status_meta.label }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="cell-title">箱体 {{ t.box_no }}</div>
+              {% if pkg %}
+                <div class="cell-sub">包裹记录：<a href="{{ url_for('admin.packages', task_id=t.task_id) }}">{{ pkg.package_id }}</a></div>
+                <div class="cell-sub"><span class="badge {{ row.package_status_meta.badgeClass }}">{{ row.package_status_meta.label }}</span></div>
+              {% else %}
+                <div class="cell-sub">尚未生成包裹记录</div>
+              {% endif %}
+            </td>
+            <td>
+              <div class="cell-sub">创建：{{ t.created_at|dt_local }}</div>
+              <div class="cell-sub">入柜确认：{{ row.put_in_at_text }}</div>
+              <div class="cell-sub">入柜确认：{{ row.ai_checked_at_text }}</div>
+            </td>
+            <td>
+              <div class="cell-sub">{{ t.ai_message if t.ai_message else row.task_status_meta.hint }}</div>
+              <div class="cell-sub">收件电话：{{ t.receiver_phone if t.receiver_phone else "-" }}</div>
+              <div class="cell-sub">商家：{{ t.merchant_name if t.merchant_name else "-" }}</div>
+            </td>
+            <td>
+              <div class="table-actions">
+                {% if order %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.platform_order_detail', platform_order_id=order.platform_order_id) }}">查看订单</a>
+                {% endif %}
+                {% if pkg %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.packages', task_id=t.task_id) }}">查看包裹</a>
+                {% endif %}
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.locker_debug', box_no=t.box_no) }}">查看设备诊断</a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted">当前没有可展示的任务。</div>
+  {% endif %}
+</div>
+{% endblock %}
