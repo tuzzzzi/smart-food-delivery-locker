@@ -25,7 +25,7 @@ I independently designed and implemented the WeChat Mini Program, Flask backend,
 | Device | ESP32-CAM polls commands, pulses a relay, observes a door sensor and uploads JPEG snapshots |
 | Vision | A Python adapter invokes external YOLOv5 `detect.py` and converts detections into a structured result |
 
-**Status:** academic prototype and local demonstration. The software walkthrough runs without a WeChat account, physical locker or model weights. It explicitly simulates device feedback and successful vision; it does not demonstrate model accuracy or real hardware execution.
+**Status:** academic prototype with application code, ESP32-CAM firmware and a host-side vision adapter. The quickstart below demonstrates the backend workflow without hardware: device feedback is simulated and the detector result is explicitly stubbed. The [hardware and real-inference setup](docs/setup.md) is documented separately.
 
 ## System architecture
 
@@ -136,8 +136,8 @@ Start with [architecture and lifecycle](docs/architecture.md), the [API map](doc
 
 ## Scope and attribution
 
-This repository contains the application, device firmware and inference-integration code. YOLOv5 is an external [Ultralytics project](https://github.com/ultralytics/yolov5); this project does not claim to have invented its model architecture. Model source, weights, training datasets and private runtime records are excluded from the public snapshot.
+This repository contains the application, device firmware and inference-integration code. Object detection uses the external [Ultralytics YOLOv5 project](https://github.com/ultralytics/yolov5). Model source, weights, training datasets and private runtime records are excluded from the public snapshot.
 
-External delivery-platform callbacks and SMS are demonstration/reserved integrations. No production deployment, performance benchmark or detection-accuracy claim is made. See [limitations](docs/limitations.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+External delivery-platform callbacks and SMS are demonstration/reserved integrations. Authentication and device endpoints retain prototype assumptions, so this repository is intended for local demonstration. See [limitations](docs/limitations.md) for deployment requirements and unverified paths, and [third-party notices](THIRD_PARTY_NOTICES.md) for attribution.
 
-This is a sanitised publication snapshot. Local development history remains separate because earlier revisions included environment-specific credentials and runtime data.
+This public snapshot excludes local credentials, databases and development artifacts; the original local development history is maintained separately.
